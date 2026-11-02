@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форма отделения</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #eef2ff; padding: 40px 20px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 28px; border: 1px solid #dbeafe; }
+        h2 { color: #1e40af; margin-bottom: 24px; text-align: center; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
+        input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+        input:focus { outline: none; border-color: #3b82f6; }
+        .error { margin-top: 6px; color: #dc2626; font-size: 13px; }
+        .btn-group { display: flex; gap: 12px; margin-top: 24px; }
+        .btn { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; text-align: center; text-decoration: none; border: none; }
+        .btn-save { background: #3b82f6; color: white; }
+        .btn-cancel { background: #9ca3af; color: white; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h2 th:text="${department.idDepartment} != null ? 'Редактирование отделения' : 'Новое отделение'"></h2>
+        <form th:action="${department.idDepartment} != null ? '/departments/update' : '/departments/save'" th:object="${department}" method="post">
+            <input type="hidden" name="id" th:value="${department.idDepartment}" th:if="${department.idDepartment} != null">
+            <div class="form-group">
+                <label>Название</label>
+                <input type="text" th:field="*{departmentName}">
+                <div class="error" th:if="${#fields.hasErrors('departmentName')}" th:errors="*{departmentName}"></div>
+            </div>
+            <div class="form-group">
+                <label>Этаж</label>
+                <input type="number" th:field="*{floor}">
+                <div class="error" th:if="${#fields.hasErrors('floor')}" th:errors="*{floor}"></div>
+            </div>
+            <div class="form-group">
+                <label>Кабинет</label>
+                <input type="text" th:field="*{roomNumber}">
+                <div class="error" th:if="${#fields.hasErrors('roomNumber')}" th:errors="*{roomNumber}"></div>
+            </div>
+            <div class="btn-group"><button type="submit" class="btn btn-save">Сохранить</button><a th:href="@{/departments}" class="btn btn-cancel">Отмена</a></div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

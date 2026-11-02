@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('Расписание врача', 'dashboard', ~{::content})}">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script src="https://cdn.tailwindcss.com"></script></head>
+<body>
+<main th:fragment="content" class="space-y-7">
+    <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div><p class="mb-2 text-sm font-semibold text-clinic-700">РАБОЧЕЕ МЕСТО ВРАЧА</p><h1 class="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Здравствуйте, <span th:text="${doctor.firstName}">Иван</span>!</h1><p class="mt-2 text-sm text-slate-500">Ваши приёмы и расписание на ближайшую неделю.</p></div>
+        <div class="rounded-xl border border-[#dcece9] bg-white px-4 py-3 text-sm text-slate-600 shadow-card"><span class="font-semibold text-ink">Сегодня:</span> <time th:text="${#temporals.format(today, 'd MMMM yyyy')}">31 октября 2026</time></div>
+    </section>
+
+    <section class="grid gap-4 sm:grid-cols-3" aria-label="Сводка расписания">
+        <article class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card"><p class="text-sm text-slate-500">Приёмов сегодня</p><p class="mt-2 text-3xl font-bold text-ink" th:text="${appointmentsToday}">4</p></article>
+        <article class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card"><p class="text-sm text-slate-500">На этой неделе</p><p class="mt-2 text-3xl font-bold text-ink" th:text="${weekAppointments.size()}">12</p></article>
+        <article class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card"><p class="text-sm text-slate-500">Специальность</p><p class="mt-2 text-lg font-bold text-ink" th:text="${doctor.specialty != null ? doctor.specialty.specialtyName : 'Не указана'}">Терапевт</p></article>
+    </section>
+
+    <section id="my-patients" class="overflow-hidden rounded-2xl border border-[#dcece9] bg-white shadow-card" aria-labelledby="today-title">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5 sm:p-6"><div><h2 id="today-title" class="text-lg font-bold text-ink">Расписание на сегодня</h2><p class="mt-1 text-sm text-slate-500">Пациенты, записанные к вам сегодня</p></div><span class="rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${todayAppointments.size() + ' приёма'}">4 приёма</span></div>
+        <div class="divide-y divide-slate-100 px-5 sm:px-6">
+            <article th:each="appointment : ${todayAppointments}" class="grid gap-4 py-4 sm:grid-cols-[100px_minmax(0,1fr)_auto] sm:items-center">
+                <time class="font-semibold text-clinic-700" th:text="${#temporals.format(appointment.appointmentDate, 'HH:mm')}">10:30</time>
+                <div><p class="font-semibold text-ink" th:text="${appointment.user != null ? appointment.user.displayName : 'Пациент не указан'}">Петрова Анна Сергеевна</p><p class="mt-1 text-sm text-slate-500" th:text="${appointment.department != null ? appointment.department.departmentName : 'Отделение не указано'}">Терапевтическое отделение</p></div>
+                <div class="flex flex-wrap items-center gap-2"><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600" th:text="${appointment.status}">Запланирован</span><a th:if="${appointment.status == null or !appointment.status.equalsIgnoreCase('Завершен')}" th:href="@{/medicalRecords/new(appointmentId=${appointment.idAppointment})}" class="rounded-lg bg-clinic-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-clinic-600">Начать приём</a><a th:if="${appointment.status != null and appointment.status.equalsIgnoreCase('Завершен')}" th:href="@{/medicalRecords/new(appointmentId=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 hover:bg-clinic-50">Добавить итог</a><button th:if="${appointment.status != null and appointment.status.equalsIgnoreCase('Завершен')}" type="button" data-coming-soon class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-clinic-50">Создать направление</button></div>
+            </article>
+            <p th:if="${todayAppointments.isEmpty()}" class="py-10 text-center text-sm text-slate-500">На сегодня приёмов нет.</p>
+        </div>
+    </section>
+
+    <section class="overflow-hidden rounded-2xl border border-[#dcece9] bg-white shadow-card" aria-labelledby="week-title">
+        <div class="border-b border-slate-100 p-5 sm:p-6"><h2 id="week-title" class="text-lg font-bold text-ink">Ближайшая неделя</h2><p class="mt-1 text-sm text-slate-500">Записи пациентов по времени</p></div>
+        <div class="divide-y divide-slate-100 px-5 sm:px-6">
+            <article th:each="appointment : ${weekAppointments}" class="grid gap-3 py-4 sm:grid-cols-[170px_minmax(0,1fr)_auto] sm:items-center">
+                <div><time class="font-semibold text-ink" th:text="${#temporals.format(appointment.appointmentDate, 'dd.MM.yyyy')}">03.11.2026</time><span class="ml-2 text-sm text-clinic-700" th:text="${#temporals.format(appointment.appointmentDate, 'HH:mm')}">11:00</span></div>
+                <p class="text-sm font-medium text-slate-700" th:text="${appointment.user != null ? appointment.user.displayName : 'Пациент не указан'}">Петрова Анна Сергеевна</p>
+                <a th:href="@{/medicalRecords/new(appointmentId=${appointment.idAppointment})}" class="w-fit text-sm font-semibold text-clinic-700 hover:underline">Открыть медкарту →</a>
+            </article>
+            <p th:if="${weekAppointments.isEmpty()}" class="py-10 text-center text-sm text-slate-500">На ближайшую неделю записей нет.</p>
+        </div>
+    </section>
+    <p class="rounded-xl bg-clinic-50 px-4 py-3 text-sm text-clinic-700">Направление можно оформить после завершения приёма. Функция выдачи направлений пока находится в разработке.</p>
+</main>
+</body>
+</html>

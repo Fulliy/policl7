@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пользователи</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "Segoe UI", Arial, sans-serif; background: #eef2ff; padding: 24px; }
+        .container { max-width: 1120px; margin: 0 auto; }
+        .header, .search-form { background: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #dbeafe; }
+        .header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        h2 { color: #1e40af; font-size: 20px; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn, button { display: inline-block; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; border: none; cursor: pointer; }
+        .btn-primary, .search-form button { background: #3b82f6; color: white; }
+        .btn-edit { background: #e0f2fe; color: #0284c7; margin-right: 8px; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .btn-reset { background: #9ca3af; color: white; }
+        .search-form { display: flex; gap: 12px; flex-wrap: wrap; }
+        .search-form input, .search-form select { flex: 1; min-width: 180px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+        table { width: 100%; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; border-collapse: separate; border-spacing: 0; }
+        th { background: #eff6ff; color: #1e40af; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+        .roles { display: flex; gap: 6px; flex-wrap: wrap; }
+        .role { background: #dbeafe; color: #1d4ed8; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 600; }
+        .back-link { display: inline-block; margin-top: 20px; color: #3b82f6; text-decoration: none; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>Пользователи</h2>
+        <div class="actions">
+            <a href="/admin/users" class="btn btn-reset">Админ-раздел</a>
+            <a href="/users/new" class="btn btn-primary">Добавить</a>
+        </div>
+    </div>
+
+    <form th:action="@{/users}" method="get" class="search-form">
+        <select name="searchField">
+            <option value="idUser" th:selected="${searchField == 'idUser'}">ID</option>
+            <option value="username" th:selected="${searchField == 'username'}">Логин</option>
+            <option value="surname" th:selected="${searchField == 'surname'}">Фамилия</option>
+            <option value="firstName" th:selected="${searchField == 'firstName'}">Имя</option>
+            <option value="email" th:selected="${searchField == 'email'}">Email</option>
+        </select>
+        <input type="text" name="searchValue" th:value="${searchValue}" placeholder="Введите ID, логин, ФИО или email">
+        <button type="submit">Найти</button>
+        <a th:href="@{/users}" class="btn btn-reset">Сбросить</a>
+    </form>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Логин</th>
+            <th>ФИО</th>
+            <th>Email</th>
+            <th>Телефон</th>
+            <th>Роли</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${users.isEmpty()}">
+            <td colspan="7" style="text-align:center;">Пользователей пока нет</td>
+        </tr>
+        <tr th:each="user : ${users}">
+            <td th:text="${user.idUser}"></td>
+            <td th:text="${user.username}"></td>
+            <td th:text="${user.displayName}"></td>
+            <td th:text="${user.email}"></td>
+            <td th:text="${user.phone} ?: 'Не указан'"></td>
+            <td>
+                <div class="roles">
+                    <span class="role" th:each="role : ${user.roles}" th:text="${role}"></span>
+                </div>
+            </td>
+            <td>
+                <a th:href="@{/users/{id}/edit(id=${user.idUser})}" class="btn btn-edit">Изменить</a>
+                <form th:action="@{/users/{id}/delete(id=${user.idUser})}" method="post" style="display:inline;">
+                    <button type="submit" class="btn-delete" onclick="return confirm('Удалить пользователя?')">Удалить</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div th:if="${totalPages > 1}" style="margin-top: 16px;">
+        <a th:if="${hasPrevious}" th:href="@{/users(page=1, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-reset">Первая</a>
+        <a th:if="${hasPrevious}" th:href="@{/users(page=${currentPage - 1}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-reset">Назад</a>
+        <span th:text="${currentPage} + ' / ' + ${totalPages}"></span>
+        <a th:if="${hasNext}" th:href="@{/users(page=${currentPage + 1}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-primary">Далее</a>
+        <a th:if="${hasNext}" th:href="@{/users(page=${totalPages}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-primary">Последняя</a>
+    </div>
+
+    <a href="/" class="back-link">Назад на главную</a>
+</div>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('Записи на приём', 'appointments', ~{::content})}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config={theme:{extend:{colors:{clinic:{50:'#e8f7f4',100:'#d3eee9',500:'#0e8f89',600:'#087f79',700:'#08716d'},ink:'#112a3d'},boxShadow:{card:'0 8px 24px rgba(14,143,137,.08)'}}}};</script>
+</head>
+<body>
+<main th:fragment="content" class="space-y-7">
+    <section class="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div><p class="mb-2 text-sm font-semibold text-clinic-600">ВАШЕ ЗДОРОВЬЕ</p><h1 class="text-3xl font-bold tracking-tight text-ink sm:text-4xl" th:text="${isPatientOnly ? 'Мои записи' : 'Записи на приём'}">Мои записи</h1><p class="mt-2 text-sm text-slate-500">Управляйте предстоящими визитами и смотрите историю приёмов.</p></div>
+        <a th:href="@{/appointments/new}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-clinic-500 px-5 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-clinic-600"><span aria-hidden="true">＋</span>Новая запись</a>
+    </section>
+
+    <section th:if="${isPatientOnly}" aria-label="Записи на приём" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+        <div class="flex flex-col gap-4 border-b border-slate-100 p-5 sm:p-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div><h2 class="text-lg font-bold text-ink">Ваши визиты</h2><p class="mt-1 text-sm text-slate-500">Ваши личные записи на приём</p></div>
+                <span class="rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${appointments.size() + ' на странице'}">2 на странице</span>
+            </div>
+            <form th:action="@{/appointments}" method="get" role="search" class="flex flex-col gap-3 sm:flex-row">
+                <input type="hidden" name="searchField" value="doctor">
+                <input type="hidden" name="visitPeriod" th:value="${visitPeriod}">
+                <label class="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-200 px-4 focus-within:border-clinic-500 focus-within:ring-2 focus-within:ring-clinic-100">
+                    <svg class="h-5 w-5 flex-none text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+                    <input name="searchValue" type="search" th:value="${searchValue}" placeholder="Найти врача по ФИО или специальности" aria-label="Поиск по ФИО врача или специальности" class="h-12 w-full border-0 bg-transparent text-sm outline-none ring-0 placeholder:text-slate-400 focus:border-0 focus:outline-none focus:ring-0">
+                </label>
+                <button type="submit" class="rounded-xl bg-clinic-50 px-5 py-3 text-sm font-semibold text-clinic-700 transition hover:bg-clinic-100">Найти</button>
+                <a th:if="${searchValue != null and !searchValue.isBlank()}" th:href="@{/appointments}" class="self-center px-2 text-sm text-slate-500 hover:text-clinic-700">Сбросить</a>
+            </form>
+            <div role="tablist" aria-label="Фильтр визитов" class="flex w-fit gap-1 rounded-xl bg-slate-100 p-1">
+                <a role="tab" th:href="@{/appointments(visitPeriod='upcoming', searchField='doctor', searchValue=${searchValue})}"
+                   th:attr="aria-selected=${visitPeriod != 'past'}"
+                   th:classappend="${visitPeriod != 'past' ? ' bg-white font-semibold text-clinic-700 shadow-sm' : ' text-slate-500 hover:text-slate-700'}"
+                   class="rounded-lg px-4 py-2 text-sm transition">Предстоящие</a>
+                <a role="tab" th:href="@{/appointments(visitPeriod='past', searchField='doctor', searchValue=${searchValue})}"
+                   th:attr="aria-selected=${visitPeriod == 'past'}"
+                   th:classappend="${visitPeriod == 'past' ? ' bg-white font-semibold text-clinic-700 shadow-sm' : ' text-slate-500 hover:text-slate-700'}"
+                   class="rounded-lg px-4 py-2 text-sm transition">Прошедшие</a>
+            </div>
+        </div>
+
+        <div id="patient-appointment-list" class="divide-y divide-slate-100 px-5 sm:px-6">
+            <article th:each="appointment : ${appointments}"
+                     th:attr="data-appointment-date=${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'yyyy-MM-dd''T''HH:mm') : ''}"
+                     class="patient-appointment grid gap-5 py-5 first:pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                    <div class="flex items-start gap-3">
+                        <span class="grid h-11 w-11 flex-none place-items-center rounded-xl bg-clinic-50 text-clinic-600">
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg>
+                        </span>
+                        <div><p class="font-semibold text-ink" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'd MMMM yyyy') : 'Дата уточняется'}">12 ноября 2026</p><p class="mt-1 text-sm text-slate-500" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'HH:mm') : 'Время уточняется'}">10:30</p></div>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-slate-800" th:text="${appointment.doctor != null ? appointment.doctor.displayName : 'Врач уточняется'}">Иванов Иван Иванович</p>
+                        <p class="mt-1 text-sm text-slate-500" th:text="${appointment.doctor != null and appointment.doctor.specialty != null ? appointment.doctor.specialty.specialtyName : 'Специальность уточняется'}">Терапевт</p>
+                        <p class="mt-1 text-xs text-slate-400" th:text="${appointment.department != null ? appointment.department.departmentName : ''}">Терапевтическое отделение</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <span class="mr-1 rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${appointment.status}">Запланирован</span>
+                    <a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 transition hover:bg-clinic-50">Перенести</a>
+                    <button type="button" data-cancel-appointment class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Отменить</button>
+                </div>
+            </article>
+            <p id="appointments-empty" th:if="${appointments.isEmpty()}" class="py-12 text-center text-sm text-slate-500">Записей пока нет. Вы можете выбрать врача и создать новую запись.</p>
+            <p id="appointments-filter-empty" hidden class="py-8 text-center text-sm text-slate-500">В этой категории записей нет.</p>
+        </div>
+        <nav th:if="${totalPages > 1}" aria-label="Страницы записей" class="flex flex-wrap items-center justify-center gap-2 border-t border-slate-100 p-4 text-sm">
+            <a th:if="${currentPage > 1}" th:href="@{/appointments(page=${currentPage - 1}, searchField='doctor', searchValue=${searchValue}, visitPeriod=${visitPeriod})}" class="rounded-lg border border-slate-200 px-3 py-2 hover:bg-clinic-50">Назад</a>
+            <span class="px-3 py-2 text-slate-500" th:text="${currentPage + ' / ' + totalPages}">1 / 1</span>
+            <a th:if="${currentPage < totalPages}" th:href="@{/appointments(page=${currentPage + 1}, searchField='doctor', searchValue=${searchValue}, visitPeriod=${visitPeriod})}" class="rounded-lg border border-slate-200 px-3 py-2 hover:bg-clinic-50">Далее</a>
+        </nav>
+    </section>
+
+    <section th:unless="${isPatientOnly}" class="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+        <h2 class="mb-4 text-lg font-bold text-ink">Записи пациентов</h2>
+        <table class="w-full min-w-[700px] text-left text-sm">
+            <thead class="bg-clinic-50 text-xs uppercase text-clinic-700"><tr><th class="p-3">Пациент</th><th class="p-3">Врач</th><th class="p-3">Дата и время</th><th class="p-3">Статус</th><th class="p-3">Жалоба</th><th class="p-3">Действия</th></tr></thead>
+            <tbody><tr th:each="appointment : ${appointments}" class="border-t border-slate-100">
+                <td class="p-3" th:text="${appointment.user != null ? appointment.user.displayName : '—'}">Пациент</td>
+                <td class="p-3" th:text="${appointment.doctor != null ? appointment.doctor.displayName : '—'}">Врач</td>
+                <td class="p-3" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'dd.MM.yyyy HH:mm') : '—'}">12.11.2026 10:30</td>
+                <td class="p-3" th:text="${appointment.status}">Запланирован</td>
+                <td class="p-3" th:text="${appointment.complaint}">Жалоба</td>
+                <td class="p-3"><a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="font-medium text-clinic-700 hover:underline">Изменить</a>
+                    <form th:action="@{/appointments/{id}/delete(id=${appointment.idAppointment})}" method="post" class="inline">
+                        <button type="submit" class="ml-3 font-medium text-rose-600 hover:underline" onclick="return confirm('Удалить запись?')">Удалить</button>
+                    </form>
+                </td>
+            </tr></tbody>
+        </table>
+        <p th:if="${appointments.isEmpty()}" class="py-8 text-center text-sm text-slate-500">Записи не найдены</p>
+        <nav th:if="${totalPages > 1}" class="mt-5 flex justify-center gap-2 text-sm" aria-label="Страницы записей">
+            <a th:if="${currentPage > 1}" th:href="@{/appointments(page=${currentPage - 1}, searchField=${searchField}, searchValue=${searchValue})}" class="rounded-lg border border-slate-200 px-3 py-2 hover:bg-clinic-50">Назад</a>
+            <span class="px-3 py-2 text-slate-500" th:text="${currentPage + ' / ' + totalPages}">1 / 1</span>
+            <a th:if="${currentPage < totalPages}" th:href="@{/appointments(page=${currentPage + 1}, searchField=${searchField}, searchValue=${searchValue})}" class="rounded-lg border border-slate-200 px-3 py-2 hover:bg-clinic-50">Далее</a>
+        </nav>
+    </section>
+
+    <script>
+        (() => {
+        })();
+    </script>
+</main>
+</body>
+</html>

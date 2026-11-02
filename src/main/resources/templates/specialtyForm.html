@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форма специальности</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #eef2ff; padding: 40px 20px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 28px; border: 1px solid #dbeafe; }
+        h2 { color: #1e40af; margin-bottom: 24px; text-align: center; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
+        input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+        .error { margin-top: 6px; color: #dc2626; font-size: 13px; }
+        .btn-group { display: flex; gap: 12px; margin-top: 24px; }
+        .btn { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; text-align: center; text-decoration: none; border: none; }
+        .btn-save { background: #3b82f6; color: white; }
+        .btn-cancel { background: #9ca3af; color: white; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h2 th:text="${specialty.idSpecialty} != null ? 'Редактирование специальности' : 'Новая специальность'"></h2>
+        <form th:action="${specialty.idSpecialty} != null ? '/specialties/update' : '/specialties/save'" th:object="${specialty}" method="post">
+            <input type="hidden" name="id" th:value="${specialty.idSpecialty}" th:if="${specialty.idSpecialty != null}">
+            <div class="form-group"><label>Название</label><input type="text" th:field="*{specialtyName}"><div class="error" th:if="${#fields.hasErrors('specialtyName')}" th:errors="*{specialtyName}"></div></div>
+            <div class="form-group"><label>Описание</label><input type="text" th:field="*{description}"><div class="error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div></div>
+            <div class="btn-group"><button type="submit" class="btn btn-save">Сохранить</button><a th:href="@{/specialties}" class="btn btn-cancel">Отмена</a></div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

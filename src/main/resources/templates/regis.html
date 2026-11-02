@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #eef2ff; padding: 24px; }
+        .wrap { max-width: 700px; margin: 0 auto; }
+        .card { background: white; border: 1px solid #dbeafe; border-radius: 20px; padding: 28px; box-shadow: 0 14px 34px rgba(37, 99, 235, 0.08); }
+        h1 { margin: 0 0 10px; color: #1d4ed8; }
+        p { color: #64748b; line-height: 1.5; margin-bottom: 22px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .field { margin-bottom: 16px; }
+        .field.full { grid-column: 1 / -1; }
+        label { display: block; margin-bottom: 6px; color: #334155; font-weight: 600; }
+        input { width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 15px; }
+        .error { margin-top: 6px; color: #dc2626; font-size: 13px; }
+        .alert { margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; background: #fee2e2; color: #b91c1c; }
+        .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+        .btn { padding: 12px 16px; border-radius: 12px; border: none; text-decoration: none; font-size: 15px; cursor: pointer; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-secondary { background: #e2e8f0; color: #334155; }
+        @media (max-width: 640px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="wrap">
+    <div class="card">
+        <h1>Регистрация</h1>
+        <p>Новый пользователь получает роль <strong>PATIENT</strong> и активный статус. После этого он сможет войти по логину и паролю.</p>
+
+        <div class="alert" th:if="${registrationError}" th:text="${registrationError}"></div>
+
+        <form th:action="@{/registration}" th:object="${registrationForm}" method="post">
+            <div class="grid">
+                <div class="field full">
+                    <label>Логин</label>
+                    <input type="text" th:field="*{username}">
+                    <div class="error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                </div>
+                <div class="field">
+                    <label>Фамилия</label>
+                    <input type="text" th:field="*{surname}">
+                    <div class="error" th:if="${#fields.hasErrors('surname')}" th:errors="*{surname}"></div>
+                </div>
+                <div class="field">
+                    <label>Имя</label>
+                    <input type="text" th:field="*{firstName}">
+                    <div class="error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+                </div>
+                <div class="field full">
+                    <label>Отчество</label>
+                    <input type="text" th:field="*{middleName}">
+                    <div class="error" th:if="${#fields.hasErrors('middleName')}" th:errors="*{middleName}"></div>
+                </div>
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" th:field="*{email}">
+                    <div class="error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                </div>
+                <div class="field">
+                    <label>Телефон</label>
+                    <input type="text" th:field="*{phone}" placeholder="+79991234567">
+                    <div class="error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                </div>
+                <div class="field">
+                    <label>Пароль</label>
+                    <input type="password" th:field="*{password}">
+                    <div class="error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                </div>
+                <div class="field">
+                    <label>Подтверждение пароля</label>
+                    <input type="password" th:field="*{confirmPassword}">
+                    <div class="error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+                <a href="/login" class="btn btn-secondary">Назад ко входу</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

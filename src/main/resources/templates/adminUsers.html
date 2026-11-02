@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка</title>
+    <style>
+        body { margin: 0; padding: 24px; font-family: "Segoe UI", Arial, sans-serif; background: #eef2ff; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .card, table { background: white; border: 1px solid #dbeafe; border-radius: 16px; }
+        .card { padding: 20px; margin-bottom: 20px; }
+        h1 { margin: 0 0 8px; color: #1d4ed8; }
+        p { margin: 0; color: #64748b; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden; }
+        th { background: #eff6ff; color: #1d4ed8; text-align: left; padding: 14px 12px; }
+        td { padding: 14px 12px; border-top: 1px solid #f1f5f9; }
+        .btn { display: inline-block; padding: 8px 14px; border-radius: 10px; text-decoration: none; background: #2563eb; color: white; }
+        .back-link { display: inline-block; margin-top: 18px; color: #2563eb; text-decoration: none; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1>Административный раздел</h1>
+        <p>Здесь можно открыть пользователя, посмотреть его данные и изменить логин или набор ролей.</p>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Логин</th>
+            <th>Пользователь</th>
+            <th>Роли</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="user : ${user_list}">
+            <td th:text="${user.idUser}"></td>
+            <td th:text="${user.username}"></td>
+            <td th:text="${user.displayName}"></td>
+            <td th:text="${#strings.listJoin(user.roles, ', ')}"></td>
+            <td><a th:href="@{/admin/{id}(id=${user.idUser})}" class="btn">Открыть</a></td>
+        </tr>
+        </tbody>
+    </table>
+
+    <a href="/" class="back-link">Назад на главную</a>
+</div>
+</body>
+</html>

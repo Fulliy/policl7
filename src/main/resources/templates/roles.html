@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Роли</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #eef2ff; padding: 24px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header, .search-form { background: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #dbeafe; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        h2 { color: #1e40af; font-size: 20px; }
+        .btn, button { padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; border: none; cursor: pointer; }
+        .btn-primary, .search-form button { background: #3b82f6; color: white; }
+        .btn-edit { background: #e0f2fe; color: #0284c7; margin-right: 8px; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .btn-reset { background: #9ca3af; color: white; }
+        .search-form { display: flex; gap: 12px; flex-wrap: wrap; }
+        .search-form input, .search-form select { flex: 1; min-width: 160px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+        table { width: 100%; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; border-collapse: separate; border-spacing: 0; }
+        th { background: #eff6ff; color: #1e40af; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #f3f4f6; }
+        .back-link { display: inline-block; margin-top: 20px; color: #3b82f6; text-decoration: none; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="header"><h2>Роли</h2><a href="/roles/new" class="btn btn-primary">Добавить</a></div>
+    <form th:action="@{/roles}" method="get" class="search-form">
+        <select name="searchField">
+            <option value="id" th:selected="${searchField == 'id'}">ID</option>
+            <option value="name" th:selected="${searchField == null || searchField == 'name' || searchField == 'roleName'}">Название</option>
+        </select>
+        <input type="text" name="searchValue" th:value="${searchValue}" placeholder="Введите ID или название">
+        <button type="submit">Найти</button>
+        <a th:href="@{/roles}" class="btn btn-reset">Сбросить</a>
+    </form>
+    <table>
+        <thead><tr><th>ID</th><th>Название</th><th>Описание</th><th></th></tr></thead>
+        <tbody>
+        <tr th:if="${roles.isEmpty()}"><td colspan="4" style="text-align:center;">Нет данных</td></tr>
+        <tr th:each="r : ${roles}">
+            <td th:text="${r.idRole}"></td><td th:text="${r.roleName}"></td><td th:text="${r.description}"></td>
+            <td><a th:href="@{/roles/{id}/edit(id=${r.idRole})}" class="btn btn-edit">Изменить</a>
+                <form th:action="@{/roles/{id}/delete(id=${r.idRole})}" method="post" style="display:inline;">
+                    <button type="submit" class="btn-delete" onclick="return confirm('Удалить роль?')">Удалить</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <div th:if="${totalPages > 1}">
+        <a th:if="${hasPrevious}" th:href="@{/roles(page=1, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-reset">Первая</a>
+        <a th:if="${hasPrevious}" th:href="@{/roles(page=${currentPage - 1}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-reset">Назад</a>
+        <span th:text="${currentPage} + ' / ' + ${totalPages}"></span>
+        <a th:if="${hasNext}" th:href="@{/roles(page=${currentPage + 1}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-primary">Далее</a>
+        <a th:if="${hasNext}" th:href="@{/roles(page=${totalPages}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-primary">Последняя</a>
+    </div>
+    <a href="/" class="back-link">Назад на главную</a>
+</div>
+</body>
+</html>

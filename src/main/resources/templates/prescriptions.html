@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Назначения</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #eef2ff; padding: 24px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header, .search-form { background: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #dbeafe; }
+        .header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+        h2 { color: #1e40af; font-size: 20px; }
+        .btn, button { display: inline-block; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; border: none; cursor: pointer; }
+        .btn-primary, .search-form button { background: #3b82f6; color: white; }
+        .btn-edit { background: #e0f2fe; color: #0284c7; margin-right: 8px; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .btn-reset { background: #9ca3af; color: white; }
+        .search-form { display: flex; gap: 12px; flex-wrap: wrap; }
+        .search-form input, .search-form select { flex: 1; min-width: 180px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+        table { width: 100%; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; border-collapse: separate; border-spacing: 0; }
+        th { background: #eff6ff; color: #1e40af; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #f3f4f6; }
+        .pagination { margin-top: 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .pagination span { color: #1e40af; font-size: 14px; }
+        .back-link { display: inline-block; margin-top: 20px; color: #3b82f6; text-decoration: none; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>Назначения</h2>
+        <a href="/prescriptions/new" class="btn btn-primary">Добавить</a>
+    </div>
+
+    <form th:action="@{/prescriptions}" method="get" class="search-form">
+        <select name="searchField">
+            <option value="idPrescription" th:selected="${searchField == 'idPrescription'}">ID</option>
+            <option value="medicationName" th:selected="${searchField == 'medicationName'}">Название лекарства</option>
+            <option value="dosage" th:selected="${searchField == 'dosage'}">Дозировка</option>
+            <option value="frequency" th:selected="${searchField == 'frequency'}">Частота</option>
+        </select>
+        <input type="text" name="searchValue" th:value="${searchValue}" placeholder="Введите значение поиска">
+        <button type="submit">Найти</button>
+        <a th:href="@{/prescriptions}" class="btn btn-reset">Сбросить</a>
+    </form>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Лекарство</th>
+            <th>Дозировка</th>
+            <th>Частота</th>
+            <th>Длительность</th>
+            <th>Мед. запись</th>
+            <th>Услуга</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${prescriptions == null or prescriptions.isEmpty()}">
+            <td colspan="8" style="text-align: center;">Нет данных</td>
+        </tr>
+        <tr th:each="presc : ${prescriptions}">
+            <td th:text="${presc.idPrescription}"></td>
+            <td th:text="${presc.medicationName}"></td>
+            <td th:text="${presc.dosage}"></td>
+            <td th:text="${presc.frequency}"></td>
+            <td th:text="${presc.durationDays}"></td>
+            <td th:text="${presc.medicalRecord != null ? presc.medicalRecord.diagnosis : '-'}"></td>
+            <td th:text="${presc.service != null ? presc.service.serviceName : '-'}"></td>
+            <td>
+                <a th:href="@{/prescriptions/{id}/edit(id=${presc.idPrescription})}" class="btn btn-edit">Изменить</a>
+                <form th:action="@{/prescriptions/{id}/delete(id=${presc.idPrescription})}" method="post" style="display:inline;">
+                    <button type="submit" class="btn-delete" onclick="return confirm('Удалить назначение?')">Удалить</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="pagination" th:if="${totalPages > 1}">
+        <a th:if="${hasPrevious}" th:href="@{/prescriptions(page=1, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-reset">Первая</a>
+        <a th:if="${hasPrevious}" th:href="@{/prescriptions(page=${currentPage - 1}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-reset">Назад</a>
+        <span th:text="${currentPage} + ' / ' + ${totalPages}"></span>
+        <a th:if="${hasNext}" th:href="@{/prescriptions(page=${currentPage + 1}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-primary">Далее</a>
+        <a th:if="${hasNext}" th:href="@{/prescriptions(page=${totalPages}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-primary">Последняя</a>
+    </div>
+
+    <a href="/" class="back-link">Назад на главную</a>
+</div>
+</body>
+</html>

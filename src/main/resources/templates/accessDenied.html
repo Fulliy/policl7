@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Доступ запрещен</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; font-family: "Segoe UI", Arial, sans-serif; background: linear-gradient(160deg, #eff6ff, #fef2f2); }
+        .card { max-width: 560px; background: white; border-radius: 24px; padding: 32px; border: 1px solid #fecaca; box-shadow: 0 18px 40px rgba(239, 68, 68, 0.12); }
+        h1 { margin: 0 0 14px; color: #b91c1c; }
+        p { margin: 0 0 12px; color: #475569; line-height: 1.6; }
+        .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+        .btn { padding: 12px 16px; border-radius: 12px; text-decoration: none; font-size: 15px; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-secondary { background: #e2e8f0; color: #334155; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="card">
+    <h1>Недостаточно прав доступа</h1>
+    <p>Вы вошли в систему, но у вашей учетной записи нет прав для открытия этой страницы.</p>
+    <p>Если считаете, что это ошибка, обратитесь к администратору или вернитесь в доступный раздел системы.</p>
+
+    <div class="actions">
+        <a href="/" class="btn btn-primary">На главную</a>
+        <a href="/login" class="btn btn-secondary">Ко входу</a>
+    </div>
+</div>
+</body>
+</html>

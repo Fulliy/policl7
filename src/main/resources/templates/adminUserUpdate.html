@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Изменение пользователя</title>
+    <style>
+        body { margin: 0; padding: 24px; font-family: "Segoe UI", Arial, sans-serif; background: #eef2ff; }
+        .card { max-width: 760px; margin: 0 auto; background: white; border: 1px solid #dbeafe; border-radius: 16px; padding: 24px; }
+        h1 { margin: 0 0 18px; color: #1d4ed8; }
+        label { display: block; margin-bottom: 8px; color: #334155; font-weight: 600; }
+        input[type="text"] { width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 12px; margin-bottom: 18px; }
+        .roles { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+        .roles label { display: inline-flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid #dbeafe; border-radius: 999px; padding: 8px 12px; margin-bottom: 0; }
+        .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+        .btn { padding: 10px 14px; border-radius: 10px; border: none; text-decoration: none; cursor: pointer; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-secondary { background: #e2e8f0; color: #334155; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="card">
+    <h1>Изменение пользователя</h1>
+    <form th:action="@{/admin/{id}/update(id=${user_object.idUser})}" method="post">
+        <label for="username">Логин</label>
+        <input id="username" name="username" type="text" th:value="${user_object.username}" required>
+
+        <label>Роли</label>
+        <div class="roles">
+            <label th:each="role : ${roles}">
+                <input type="checkbox" name="roles" th:value="${role}" th:checked="${user_object.roles.contains(role)}">
+                <span th:text="${role}"></span>
+            </label>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a th:href="@{/admin/{id}(id=${user_object.idUser})}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+</body>
+</html>

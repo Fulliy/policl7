@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Форма роли</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #eef2ff; margin: 0; padding: 40px 20px; }
+        .card { max-width: 520px; margin: 0 auto; background: white; border: 1px solid #dbeafe; border-radius: 12px; padding: 28px; }
+        h2 { color: #1e40af; margin-bottom: 24px; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #374151; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; }
+        .error { margin-top: 6px; color: #dc2626; font-size: 13px; }
+        .btn { padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-cancel { background: #9ca3af; margin-left: 10px; text-decoration: none; display: inline-block; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="card">
+    <h2 th:text="${role.idRole} != null ? 'Редактирование роли' : 'Добавление роли'"></h2>
+    <form th:action="${role.idRole} != null ? '/roles/update' : '/roles/save'" th:object="${role}" method="post">
+        <input type="hidden" name="id" th:value="${role.idRole}" th:if="${role.idRole != null}">
+
+        <div class="form-group">
+            <label>Название роли</label>
+            <input type="text" th:field="*{roleName}">
+            <div class="error" th:if="${#fields.hasErrors('roleName')}" th:errors="*{roleName}"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Описание</label>
+            <input type="text" th:field="*{description}">
+            <div class="error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Специальность</label>
+            <select th:field="*{specialty}">
+                <option value="">Без специальности</option>
+                <option th:each="spec : ${specialties}" th:value="${spec.idSpecialty}" th:text="${spec.specialtyName}"></option>
+            </select>
+            <div class="error" th:if="${#fields.hasErrors('specialty')}" th:errors="*{specialty}"></div>
+        </div>
+
+        <button type="submit" class="btn">Сохранить</button>
+        <a th:href="@{/roles}" class="btn btn-cancel">Отмена</a>
+    </form>
+</div>
+</body>
+</html>

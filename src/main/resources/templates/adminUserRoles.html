@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление ролями пользователей</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #eef2ff; padding: 24px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header, table { background: white; border: 1px solid #dbeafe; border-radius: 16px; }
+        .header { padding: 20px; margin-bottom: 20px; }
+        h1 { margin: 0 0 8px; color: #1d4ed8; font-size: 28px; }
+        .header p { margin: 0; color: #64748b; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden; }
+        th { background: #eff6ff; color: #1e40af; padding: 14px 12px; text-align: left; }
+        td { padding: 14px 12px; border-top: 1px solid #f1f5f9; vertical-align: top; }
+        .roles-form { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .roles { display: flex; gap: 10px; flex-wrap: wrap; }
+        .roles label { display: inline-flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid #dbeafe; border-radius: 999px; padding: 8px 12px; color: #334155; }
+        .btn { padding: 10px 16px; border: none; border-radius: 10px; background: #2563eb; color: white; cursor: pointer; }
+        .back-link { display: inline-block; margin-top: 18px; color: #2563eb; text-decoration: none; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Управление ролями пользователей</h1>
+        <p>Главная роль системы может менять набор ролей у любого пользователя. Если снять все роли, пользователю автоматически будет назначена роль PATIENT.</p>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Пользователь</th>
+            <th>Email</th>
+            <th>Изменение ролей</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="user : ${users}">
+            <td th:text="${user.idUser}"></td>
+            <td th:text="${user.displayName}"></td>
+            <td th:text="${user.email}"></td>
+            <td>
+                <form th:action="@{/admin/users/{id}/roles(id=${user.idUser})}" method="post" class="roles-form">
+                    <div class="roles">
+                        <label th:each="role : ${availableRoles}">
+                            <input type="checkbox" name="roles" th:value="${role}" th:checked="${user.roles.contains(role)}">
+                            <span th:text="${role}"></span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn">Сохранить роли</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <a href="/" class="back-link">Назад на главную</a>
+</div>
+</body>
+</html>

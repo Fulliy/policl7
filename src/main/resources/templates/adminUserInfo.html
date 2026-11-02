@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пользователь</title>
+    <style>
+        body { margin: 0; padding: 24px; font-family: "Segoe UI", Arial, sans-serif; background: #eef2ff; }
+        .card { max-width: 700px; margin: 0 auto; background: white; border: 1px solid #dbeafe; border-radius: 16px; padding: 24px; }
+        h1 { margin: 0 0 16px; color: #1d4ed8; }
+        .row { margin-bottom: 12px; color: #334155; }
+        .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+        .btn { display: inline-block; padding: 10px 14px; border-radius: 10px; text-decoration: none; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-secondary { background: #e2e8f0; color: #334155; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="card">
+    <h1>Данные пользователя</h1>
+    <div class="row"><strong>ID:</strong> <span th:text="${user_object.idUser}"></span></div>
+    <div class="row"><strong>Логин:</strong> <span th:text="${user_object.username}"></span></div>
+    <div class="row"><strong>ФИО:</strong> <span th:text="${user_object.displayName}"></span></div>
+    <div class="row"><strong>Email:</strong> <span th:text="${user_object.email}"></span></div>
+    <div class="row"><strong>Активен:</strong> <span th:text="${user_object.active ? 'Да' : 'Нет'}"></span></div>
+    <div class="row"><strong>Роли:</strong> <span th:text="${#strings.listJoin(user_object.roles, ', ')}"></span></div>
+
+    <div class="actions">
+        <a th:href="@{/admin/{id}/update(id=${user_object.idUser})}" class="btn btn-primary">Изменить</a>
+        <a href="/admin/users" class="btn btn-secondary">Назад к списку</a>
+    </div>
+</div>
+</body>
+</html>

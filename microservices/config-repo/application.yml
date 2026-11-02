@@ -1,0 +1,36 @@
+spring:
+  cloud:
+    config:
+      uri: http://localhost:8888
+  datasource:
+    url: ${MEDICAL_DB_URL:jdbc:postgresql://localhost:5433/policl}
+    username: ${MEDICAL_DB_USERNAME}
+    password: ${MEDICAL_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  session:
+    store-type: jdbc
+    jdbc:
+      initialize-schema: never
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO

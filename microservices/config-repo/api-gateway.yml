@@ -1,0 +1,97 @@
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    gateway:
+      enabled: true
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 1000
+        response-timeout: 4s
+      routes:
+        - id: identity-service
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/auth/**,/api/users/me,/api/admin/users/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: identityCircuitBreaker
+                fallbackUri: forward:/fallback/identity
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+        - id: appointment-service
+          uri: lb://appointment-service
+          predicates:
+            - Path=/api/appointments/**,/api/services/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: appointmentCircuitBreaker
+                fallbackUri: forward:/fallback/appointments
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+        - id: medical-record-service
+          uri: lb://medical-record-service
+          predicates:
+            - Path=/api/medical-records/**,/api/prescriptions/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: medicalRecordCircuitBreaker
+                fallbackUri: forward:/fallback/medical-records
+                statusCodes:
+                  - 500
+                  - 502
+                  - 503
+                  - 504
+        - id: legacy-thymeleaf-application
+          uri: http://localhost:8084
+          predicates:
+            - Path=/**
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      identityCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      appointmentCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+      medicalRecordCircuitBreaker:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+  timelimiter:
+    instances:
+      identityCircuitBreaker:
+        timeoutDuration: 3s
+      appointmentCircuitBreaker:
+        timeoutDuration: 3s
+      medicalRecordCircuitBreaker:
+        timeoutDuration: 3s

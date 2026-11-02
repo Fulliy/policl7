@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форма записи на прием</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #eef2ff; padding: 40px 20px; }
+        .container { max-width: 550px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 28px; border: 1px solid #dbeafe; }
+        h2 { color: #1e40af; margin-bottom: 24px; font-size: 20px; text-align: center; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
+        input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; background: white; }
+        textarea { resize: vertical; min-height: 80px; }
+        .error { margin-top: 6px; color: #dc2626; font-size: 13px; }
+        .btn-group { display: flex; gap: 12px; margin-top: 24px; }
+        .btn { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; text-align: center; text-decoration: none; border: none; }
+        .btn-save { background: #3b82f6; color: white; }
+        .btn-cancel { background: #9ca3af; color: white; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h2 th:text="${appointment.idAppointment != null} ? 'Редактирование записи' : 'Новая запись на прием'"></h2>
+        <form th:action="${appointment.idAppointment != null} ? '/appointments/update' : '/appointments/save'" th:object="${appointment}" method="post">
+            <input type="hidden" name="id" th:value="${appointment.idAppointment}" th:if="${appointment.idAppointment != null}">
+
+            <div class="form-group">
+                <label>Дата и время приема</label>
+                <input type="datetime-local" th:field="*{appointmentDate}">
+                <div class="error" th:if="${#fields.hasErrors('appointmentDate')}" th:errors="*{appointmentDate}"></div>
+            </div>
+
+            <div class="form-group" th:if="${!isPatientOnly}">
+                <label>Статус</label>
+                <select th:field="*{status}">
+                    <option value="">Выберите статус</option>
+                    <option value="Запланирован">Запланирован</option>
+                    <option value="Завершен">Завершен</option>
+                    <option value="Отменен">Отменен</option>
+                    <option value="Пропущен">Пропущен</option>
+                </select>
+                <div class="error" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></div>
+            </div>
+            <input th:if="${isPatientOnly}" type="hidden" th:field="*{status}">
+
+            <div class="form-group">
+                <label>Жалоба пациента</label>
+                <textarea th:field="*{complaint}" rows="3"></textarea>
+                <div class="error" th:if="${#fields.hasErrors('complaint')}" th:errors="*{complaint}"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Пациент</label>
+                <select th:if="${!isPatientOnly}" th:field="*{user}">
+                    <option value="">Выберите пациента</option>
+                    <option th:each="user : ${users}" th:value="${user.idUser}" th:text="${user.surname} + ' ' + ${user.firstName}"></option>
+                </select>
+                <input th:if="${isPatientOnly}" type="text" th:value="${users[0].surname + ' ' + users[0].firstName}" readonly>
+                <!-- Для пациента пользователь определяется на сервере по текущей сессии. -->
+                <div class="error" th:if="${#fields.hasErrors('user')}" th:errors="*{user}"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Отделение</label>
+                <select th:field="*{department}">
+                    <option value="">Выберите отделение</option>
+                    <option th:each="dept : ${departments}" th:value="${dept.idDepartment}" th:text="${dept.departmentName}"></option>
+                </select>
+                <div class="error" th:if="${#fields.hasErrors('department')}" th:errors="*{department}"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Доктор</label>
+                <select name="doctorId">
+                    <option value="">Выберите доктора</option>
+                    <option th:each="doctor : ${doctors}" th:value="${doctor.idUser}"
+                            th:text="${doctor.surname + ' ' + doctor.firstName}"
+                            th:selected="${appointment.doctor != null and appointment.doctor.idUser == doctor.idUser}"></option>
+                </select>
+                <div class="error" th:if="${#fields.hasErrors('doctor')}" th:errors="*{doctor}"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Выберите услуги</label>
+                <div th:each="service : ${services}">
+                    <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+                        <input type="checkbox" name="serviceIds" th:value="${service.idService}"
+                               th:checked="${appointment.services != null and #lists.contains(appointment.services.![idService], service.idService)}"
+                               style="width:auto;">
+                        <span th:text="${service.serviceName + ' — ' + service.cost + ' ₽'}"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn btn-save">Сохранить</button>
+                <a th:href="@{/appointments}" class="btn btn-cancel">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Услуги</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #eef2ff; padding: 24px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header, .search-form { background: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #dbeafe; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        h2 { color: #1e40af; font-size: 20px; }
+        .btn, button { padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; border: none; cursor: pointer; }
+        .btn-primary, .search-form button { background: #3b82f6; color: white; }
+        .btn-edit { background: #e0f2fe; color: #0284c7; margin-right: 8px; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .btn-reset { background: #9ca3af; color: white; }
+        .search-form { display: flex; gap: 12px; flex-wrap: wrap; }
+        .search-form input, .search-form select { flex: 1; min-width: 160px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+        table { width: 100%; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; border-collapse: separate; border-spacing: 0; }
+        th { background: #eff6ff; color: #1e40af; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #f3f4f6; }
+        .price { color: #059669; font-weight: 500; }
+        .back-link { display: inline-block; margin-top: 20px; color: #3b82f6; text-decoration: none; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="container">
+    <div class="header"><h2>Услуги</h2><a th:if="${!patientOnly}" href="/services/new" class="btn btn-primary">Добавить</a></div>
+    <form th:action="@{/services}" method="get" class="search-form">
+        <select name="searchField">
+            <option value="id" th:selected="${searchField == 'id'}">ID</option>
+            <option value="name" th:selected="${searchField == null || searchField == 'name' || searchField == 'serviceName'}">Название</option>
+        </select>
+        <input type="text" name="searchValue" th:value="${searchValue}" placeholder="Введите ID или название">
+        <button type="submit">Найти</button>
+        <a th:href="@{/services}" class="btn btn-reset">Сбросить</a>
+    </form>
+    <table>
+        <thead><tr><th>ID</th><th>Название</th><th>Стоимость</th><th>Описание</th><th th:if="${!patientOnly}"></th></tr></thead>
+        <tbody>
+        <tr th:if="${services.isEmpty()}"><td th:attr="colspan=${patientOnly ? 4 : 5}" style="text-align:center;">Нет данных</td></tr>
+        <tr th:each="s : ${services}">
+            <td th:text="${s.idService}"></td><td th:text="${s.serviceName}"></td>
+            <td class="price" th:text="${s.cost} + ' руб.'"></td><td th:text="${s.description}"></td>
+            <td th:if="${!patientOnly}"><a th:href="@{/services/{id}/edit(id=${s.idService})}" class="btn btn-edit">Изменить</a>
+                <form th:action="@{/services/{id}/delete(id=${s.idService})}" method="post" style="display:inline;">
+                    <button type="submit" class="btn-delete" onclick="return confirm('Удалить услугу?')">Удалить</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+    <div th:if="${totalPages > 1}">
+        <a th:if="${hasPrevious}" th:href="@{/services(page=1, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-reset">Первая</a>
+        <a th:if="${hasPrevious}" th:href="@{/services(page=${currentPage - 1}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-reset">Назад</a>
+        <span th:text="${currentPage} + ' / ' + ${totalPages}"></span>
+        <a th:if="${hasNext}" th:href="@{/services(page=${currentPage + 1}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-primary">Далее</a>
+        <a th:if="${hasNext}" th:href="@{/services(page=${totalPages}, searchField=${searchField}, searchValue=${searchValue})}" class="btn btn-primary">Последняя</a>
+    </div>
+    <a href="/" class="back-link">Назад на главную</a>
+</div>
+</body>
+</html>

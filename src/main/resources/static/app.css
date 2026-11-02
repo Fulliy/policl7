@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root { --ink:#112a3d; --muted:#607587; --teal:#0e8f89; --teal-dark:#08716d; --mint:#e8f7f4; --line:#dcece9; --paper:#fff; --danger:#b84b55; }
+* { box-sizing:border-box; }
+body { color:var(--ink) !important; background:#f5faf9 !important; font-family:Manrope,Arial,sans-serif !important; }
+.container { max-width:1180px !important; margin:0 auto !important; padding:28px 22px 55px !important; }
+.header, .search-form { background:var(--paper) !important; border:1px solid var(--line) !important; border-radius:18px !important; box-shadow:0 10px 25px #1e766d0b !important; }
+.header { padding:18px 22px !important; }
+h1, h2 { color:var(--ink) !important; letter-spacing:-.04em; }
+.btn, button, .link-btn { font-family:inherit !important; transition:transform .18s,background .18s,box-shadow .18s; }
+.btn:hover, button:hover, .link-btn:hover { transform:translateY(-1px); }
+.btn-primary, .search-form button, button[type="submit"] { background:var(--teal) !important; color:#fff !important; box-shadow:0 7px 16px #0e8f8926; }
+.btn-primary:hover, .search-form button:hover, button[type="submit"]:hover { background:var(--teal-dark) !important; }
+.btn-edit { background:#e2f4f1 !important; color:var(--teal-dark) !important; }
+.btn-delete { background:#fff0f0 !important; color:var(--danger) !important; }
+.btn-reset, .btn-cancel { background:#edf4f3 !important; color:var(--muted) !important; }
+.search-form { padding:15px 18px !important; }
+input, select, textarea { border:1px solid #cfe2df !important; border-radius:10px !important; font-family:inherit !important; color:var(--ink); background:#fff; }
+input:focus, select:focus, textarea:focus { outline:3px solid #bfe8e1; border-color:var(--teal) !important; }
+table { border:1px solid var(--line) !important; border-radius:18px !important; box-shadow:0 10px 25px #1e766d0b; }
+th { background:var(--mint) !important; color:var(--teal-dark) !important; }
+td { border-bottom-color:#edf4f3 !important; }
+tr:hover td { background:#fbfefd; }
+.card { border:1px solid var(--line) !important; border-radius:22px !important; box-shadow:0 18px 45px #1e766d12 !important; }
+.form-group label, label { color:var(--ink) !important; }
+.error { color:var(--danger) !important; }
+.back-link { color:var(--teal-dark) !important; }
+.pagination { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; margin-top:20px; }
+.pagination a, .pagination span { padding:8px 12px; border-radius:9px; background:#fff; color:var(--teal-dark); text-decoration:none; border:1px solid var(--line); }
+.pagination span { background:var(--mint); font-weight:700; }
+@media (max-width:700px) { body { padding:12px !important; } .container { padding:12px 0 35px !important; } .header { gap:12px; flex-wrap:wrap; } table { display:block; overflow-x:auto; white-space:nowrap; } }
+
+/* Shared clinic theme for pages that still define their own legacy layouts. */
+body { margin:0 !important; padding:0 !important; min-height:100vh; }
+.container { padding:28px 22px 48px !important; }
+body > .card { width:min(760px,calc(100% - 32px)); margin:32px auto !important; padding:28px !important; background:var(--paper) !important; }
+.container > .card { width:min(760px,100%); margin-right:auto !important; margin-left:auto !important; padding:28px !important; background:var(--paper) !important; }
+.wrap { width:min(700px,calc(100% - 32px)); margin:32px auto !important; }
+.header, .search-form, .card { border-color:var(--line) !important; border-radius:18px !important; background:var(--paper) !important; box-shadow:0 12px 32px #1e766d0c !important; }
+.header { margin-bottom:18px !important; }
+.header p, .subtitle, .description { color:var(--muted) !important; }
+h1, h2, h3 { color:var(--ink) !important; }
+table { border-color:var(--line) !important; border-radius:14px !important; background:var(--paper) !important; }
+th { color:var(--teal-dark) !important; background:var(--mint) !important; border-color:var(--line) !important; }
+td { color:#45615e; border-color:#edf4f3 !important; }
+tbody tr:hover td { background:#f7fcfb; }
+input, select, textarea { border-color:#cfe2df !important; border-radius:10px !important; color:var(--ink) !important; background:var(--paper); font-family:inherit !important; }
+input:focus, select:focus, textarea:focus { border-color:var(--teal) !important; outline:3px solid #bfe8e1 !important; }
+.btn, button, .link-btn { border-radius:10px !important; font-family:inherit !important; transition:transform .18s,background .18s,box-shadow .18s; }
+.btn:hover, button:hover, .link-btn:hover { transform:translateY(-1px); }
+.btn-primary, .btn-save, .btn:not(.btn-secondary):not(.btn-reset):not(.btn-cancel):not(.btn-edit):not(.btn-delete), button[type="submit"]:not(.btn-delete):not(.delete-button):not(.icon-button) { color:#fff !important; background:var(--teal) !important; border-color:var(--teal) !important; }
+.btn-primary:hover, .btn-save:hover, .btn:not(.btn-secondary):not(.btn-reset):not(.btn-cancel):not(.btn-edit):not(.btn-delete):hover, button[type="submit"]:not(.btn-delete):not(.delete-button):not(.icon-button):hover { background:var(--teal-dark) !important; }
+.btn-secondary, .btn-reset, .btn-cancel { color:var(--teal-dark) !important; background:#edf6f4 !important; border-color:#dcece9 !important; }
+.btn-edit { color:var(--teal-dark) !important; background:#e2f4f1 !important; border-color:#d1ebe5 !important; }
+.btn-delete, .error { color:var(--danger) !important; }
+.btn-delete, .delete-button, .delete-form button[type="submit"] { color:var(--danger) !important; background:#fff0f0 !important; border-color:#f2dddd !important; }
+.icon-button { color:var(--teal-dark) !important; background:transparent !important; border-color:transparent !important; }
+.back-link { color:var(--teal-dark) !important; }
+.roles label { color:var(--ink) !important; background:#f5faf9 !important; border-color:var(--line) !important; }
+.alert { border:1px solid #f2dddd; background:#fff3f2 !important; color:var(--danger) !important; }
+.pagination { margin-top:20px; }
+@media (max-width:700px) {
+    .container { padding:18px 14px 36px !important; }
+    body > .card, .container > .card { padding:22px !important; }
+    .wrap { width:calc(100% - 28px); margin:18px auto !important; }
+    .grid { grid-template-columns:1fr !important; }
+}

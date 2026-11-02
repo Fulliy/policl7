@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('Главная', 'dashboard', ~{::content})}">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script src="https://cdn.tailwindcss.com"></script></head>
+<body>
+<main th:fragment="content" class="space-y-7">
+    <section class="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div><p class="mb-2 text-sm font-semibold text-clinic-600">ЛИЧНЫЙ КАБИНЕТ</p><h1 class="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Здравствуйте, <span th:text="${patient.firstName}">Иван</span>!</h1><p class="mt-2 text-sm text-slate-500">Здесь собрана важная информация о вашем здоровье.</p></div>
+        <a th:href="@{/appointments/new}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-clinic-500 px-5 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-clinic-600"><span aria-hidden="true">＋</span>Записаться к врачу</a>
+    </section>
+    <section class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card sm:p-6" aria-labelledby="next-appointments-title">
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-3"><div><h2 id="next-appointments-title" class="text-lg font-bold text-ink">Ближайшие записи</h2><p class="mt-1 text-sm text-slate-500">Предстоящие визиты к специалистам</p></div><a th:href="@{/appointments}" class="text-sm font-semibold text-clinic-700 hover:text-clinic-600">Все записи <span aria-hidden="true">→</span></a></div>
+        <div class="divide-y divide-slate-100">
+            <article th:each="appointment : ${patientAppointments}" th:if="${appointment.status == null or !appointment.status.equalsIgnoreCase('Отменен')}"
+                     th:attr="data-appointment-date=${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'yyyy-MM-dd''T''HH:mm') : ''}"
+                     class="patient-upcoming grid gap-4 py-4 first:pt-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
+                    <div><p class="font-semibold text-ink" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'd MMMM yyyy') : 'Дата уточняется'}">12 ноября 2026</p><p class="mt-1 text-sm text-slate-500" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'HH:mm') : 'Время уточняется'}">10:30</p></div>
+                    <div><p class="text-sm font-semibold text-slate-800" th:text="${appointment.doctor != null ? appointment.doctor.displayName : 'Врач уточняется'}">Иванов Иван Иванович</p><p class="mt-1 text-sm text-slate-500" th:text="${appointment.doctor != null and appointment.doctor.specialty != null ? appointment.doctor.specialty.specialtyName : 'Специальность уточняется'}">Терапевт</p></div>
+                    <p class="text-sm text-slate-500 lg:col-span-2" th:text="${appointment.department != null ? appointment.department.departmentName : 'Медицинский центр'}">Терапевтическое отделение</p>
+                    <span class="w-fit rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${appointment.status}">Запланирован</span>
+                </div>
+                <div class="flex flex-wrap gap-2"><a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 hover:bg-clinic-50">Перенести</a><button type="button" data-cancel-appointment class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Отменить</button></div>
+            </article>
+            <p id="patient-appointments-empty" th:if="${patientAppointments.isEmpty()}" class="py-8 text-center text-sm text-slate-500">У вас пока нет предстоящих записей.</p>
+            <p id="patient-appointments-filter-empty" th:unless="${patientAppointments.isEmpty()}" class="hidden py-8 text-center text-sm text-slate-500">Ближайших записей пока нет.</p>
+            <article th:remove="all" class="grid gap-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center"><div><p class="font-semibold text-ink">12 ноября 2026</p><p class="mt-1 text-sm text-slate-500">10:30</p></div><div><p class="text-sm font-semibold text-slate-800">Иванов Иван Иванович</p><p class="mt-1 text-sm text-slate-500">Терапевт</p></div><p class="text-sm text-slate-500 lg:col-span-2">Терапевтическое отделение</p><span class="w-fit rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700">Запланирован</span></div><div class="flex flex-wrap gap-2"><a href="/appointments/new" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700">Перенести</a><button type="button" class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600">Отменить</button></div></article>
+        </div>
+    </section>
+    <section aria-labelledby="patient-shortcuts-title">
+        <div class="mb-4"><h2 id="patient-shortcuts-title" class="text-lg font-bold text-ink">Быстрый доступ</h2><p class="mt-1 text-sm text-slate-500">Основные разделы вашего кабинета</p></div>
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <a th:href="@{/appointments}" class="group rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-700">▣</span><h3 class="font-semibold text-ink">Записи на приём</h3><p class="mt-1 text-sm text-slate-500">Ваши предстоящие и прошедшие визиты</p></a>
+            <button type="button" data-coming-soon class="rounded-2xl border border-[#dcece9] bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-700">♡</span><h3 class="font-semibold text-ink">Медкарта</h3><p class="mt-1 text-sm text-slate-500">История медицинских записей · Скоро</p></button>
+            <button type="button" data-coming-soon class="rounded-2xl border border-[#dcece9] bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-700">↗</span><h3 class="font-semibold text-ink">Направления</h3><p class="mt-1 text-sm text-slate-500">Назначения специалистов · Скоро</p></button>
+            <button type="button" data-coming-soon class="rounded-2xl border border-[#dcece9] bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-700">⌖</span><h3 class="font-semibold text-ink">Прикрепления</h3><p class="mt-1 text-sm text-slate-500">Ваше медицинское учреждение · Скоро</p></button>
+        </div>
+    </section>
+    <script>
+        (() => {
+            const rows = [...document.querySelectorAll('.patient-upcoming')];
+            const now = new Date();
+            const upcoming = rows.filter((row) => !row.dataset.appointmentDate || new Date(row.dataset.appointmentDate) >= now)
+                .sort((a, b) => new Date(a.dataset.appointmentDate) - new Date(b.dataset.appointmentDate));
+            rows.forEach((row) => { row.hidden = !upcoming.slice(0, 3).includes(row); });
+            const empty = document.getElementById('patient-appointments-empty');
+            if (empty) empty.classList.toggle('hidden', upcoming.length > 0);
+            const filteredEmpty = document.getElementById('patient-appointments-filter-empty');
+            if (filteredEmpty) filteredEmpty.classList.toggle('hidden', upcoming.length > 0);
+        })();
+    </script>
+</main>
+</body>
+</html>

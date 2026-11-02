@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в систему</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; font-family: Manrope, "Segoe UI", Arial, sans-serif; background: radial-gradient(circle at top, #dff4ef 0%, #f5faf9 55%, #eef7f5 100%); }
+        .card { width: 100%; max-width: 430px; background: white; border-radius: 24px; padding: 32px; border: 1px solid #dcece9; box-shadow: 0 18px 50px rgba(14, 143, 137, 0.14); }
+        h1 { margin: 0 0 10px; color: #112a3d; font-size: 28px; letter-spacing: -.04em; }
+        p { color: #607587; line-height: 1.5; }
+        .message { padding: 12px 14px; border-radius: 12px; font-size: 14px; margin: 16px 0; }
+        .message.error { background: #fee2e2; color: #b91c1c; }
+        .message.success { background: #dcfce7; color: #166534; }
+        .field { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; color: #334155; font-weight: 600; }
+        input { width: 100%; padding: 12px 14px; border: 1px solid #cfe2df; border-radius: 12px; font-size: 15px; font-family: inherit; }
+        button, .link-btn { width: 100%; padding: 12px 14px; border-radius: 12px; border: none; font-size: 15px; cursor: pointer; text-decoration: none; text-align: center; display: inline-block; }
+        button { background: #0e8f89; color: white; }
+        .link-btn { background: #e8f7f4; color: #08716d; margin-top: 12px; }
+        .demo { margin-top: 16px; padding: 14px; border-radius: 14px; background: #f8fafc; color: #334155; font-size: 14px; }
+</style>
+    <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="card">
+    <h1>Вход в систему</h1>
+    <p>Для авторизации используйте логин и пароль. После входа система откроет разделы в соответствии с вашими ролями.</p>
+
+    <div class="message error" th:if="${param.error}">Неверный логин или пароль.</div>
+    <div class="message success" th:if="${param.logout}">Вы успешно вышли из системы.</div>
+    <div class="message success" th:if="${param.registered}">Регистрация завершена. Теперь можно войти.</div>
+
+    <form th:action="@{/login}" method="post">
+        <div class="field">
+            <label for="username">Логин</label>
+            <input id="username" name="username" type="text" placeholder="Введите логин" required>
+        </div>
+        <div class="field">
+            <label for="password">Пароль</label>
+            <input id="password" name="password" type="password" placeholder="Введите пароль" required>
+        </div>
+        <button type="submit">Войти</button>
+    </form>
+
+    <a href="/registration" class="link-btn">Регистрация</a>
+
+    <div class="demo">
+        <strong>Демо-аккаунты:</strong><br>
+        admin / password<br>
+        doctor / password<br>
+        patient / password
+    </div>
+</div>
+</body>
+</html>

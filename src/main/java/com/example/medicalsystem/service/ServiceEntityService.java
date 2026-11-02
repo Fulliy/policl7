@@ -1,0 +1,82 @@
+package com.example.medicalsystem.service;
+
+import com.example.medicalsystem.model.MedicalServiceEntity;
+import com.example.medicalsystem.repository.ServiceRepository;
+import jakarta.annotation.PostConstruct;
+import org.springframework.data.domain.Page;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@Transactional
+public class ServiceEntityService {
+
+    private final ServiceRepository repository;
+
+    public ServiceEntityService(ServiceRepository repository) {
+        this.repository = repository;
+    }
+
+    @PostConstruct
+    public void init() {
+        long count = repository.count();
+        for (int i = (int) count + 1; i <= 10; i++) {
+            MedicalServiceEntity service = new MedicalServiceEntity();
+            service.setServiceName("Услуга " + i);
+            service.setCost(1000 + i * 100);
+            service.setDescription("Описание услуги " + i);
+            repository.save(service);
+        }
+    }
+
+    public List<MedicalServiceEntity> findAll() {
+        return repository.findAll();
+    }
+
+    public Page<MedicalServiceEntity> findPage(int page) {
+        return repository.findAll(PaginationHelper.pageable(page));
+    }
+
+    public MedicalServiceEntity findById(Integer id) {
+        return repository.findById(id).orElse(null);
+    }
+
+    public MedicalServiceEntity save(MedicalServiceEntity service) {
+        return repository.save(service);
+    }
+
+    public void deleteById(Integer id) {
+        repository.deleteById(id);
+    }
+
+    public Page<MedicalServiceEntity> search(String fieldName, String value, int page) {
+        if (fieldName == null || value == null || value.isBlank()) {
+            return findPage(page);
+        }
+
+        String trimmedValue = value.trim();
+        if ("id".equals(fieldName) || "idService".equals(fieldName)) {
+            return parseId(trimmedValue)
+                    .map(id -> repository.findById(id).map(List::of).orElseGet(List::of))
+                    .map(items -> PaginationHelper.pageFromList(items, page))
+                    .orElseGet(() -> PaginationHelper.pageFromList(List.of(), page));
+        }
+
+        if ("name".equals(fieldName) || "serviceName".equals(fieldName)) {
+            return PaginationHelper.pageFromList(repository.findByServiceNameContainingIgnoreCase(trimmedValue), page);
+        }
+
+        return PaginationHelper.pageFromList(repository.searchByKeyword(trimmedValue), page);
+    }
+
+    private Optional<Integer> parseId(String value) {
+        try {
+            return Optional.of(Integer.parseInt(value));
+        } catch (NumberFormatException ex) {
+            return Optional.empty();
+        }
+    }
+}
