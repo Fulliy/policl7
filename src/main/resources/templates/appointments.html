@@ -54,15 +54,18 @@
                         <div><p class="font-semibold text-ink" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'd MMMM yyyy') : 'Дата уточняется'}">12 ноября 2026</p><p class="mt-1 text-sm text-slate-500" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'HH:mm') : 'Время уточняется'}">10:30</p></div>
                     </div>
                     <div>
-                        <p class="font-semibold text-slate-800" th:text="${appointment.doctor != null ? appointment.doctor.displayName : 'Врач уточняется'}">Иванов Иван Иванович</p>
-                        <p class="mt-1 text-sm text-slate-500" th:text="${appointment.doctor != null and appointment.doctor.specialty != null ? appointment.doctor.specialty.specialtyName : 'Специальность уточняется'}">Терапевт</p>
-                        <p class="mt-1 text-xs text-slate-400" th:text="${appointment.department != null ? appointment.department.departmentName : ''}">Терапевтическое отделение</p>
+                        <span class="mb-1 inline-flex rounded-full bg-clinic-50 px-2.5 py-1 text-[11px] font-semibold text-clinic-700"
+                              th:text="${appointment.type != null and appointment.type.name() == 'SERVICE' ? 'Услуга' : 'Приём врача'}">Приём врача</span>
+                        <p class="font-semibold text-slate-800"
+                           th:text="${appointment.type != null and appointment.type.name() == 'SERVICE' ? 'Услуги: ' + #strings.listJoin(appointment.services.![serviceName], ', ') : (appointment.doctor != null ? appointment.doctor.displayName : 'Врач уточняется')}">Иванов Иван Иванович</p>
+                        <p th:if="${appointment.type == null or appointment.type.name() != 'SERVICE'}" class="mt-1 text-sm text-slate-500" th:text="${appointment.doctor != null and appointment.doctor.specialty != null ? appointment.doctor.specialty.specialtyName : 'Специальность уточняется'}">Терапевт</p>
+                        <p th:if="${appointment.type == null or appointment.type.name() != 'SERVICE'}" class="mt-1 text-xs text-slate-400" th:text="${appointment.department != null ? appointment.department.departmentName : ''}">Терапевтическое отделение</p>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                     <span class="mr-1 rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${appointment.status}">Запланирован</span>
                     <a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 transition hover:bg-clinic-50">Перенести</a>
-                    <button type="button" data-cancel-appointment class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Отменить</button>
+                    <form th:if="${isPatientOnly}" th:action="@{/appointments/{id}/cancel(id=${appointment.idAppointment})}" method="post"><button type="submit" class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50" onclick="return confirm('Отменить запись?')">Отменить</button></form>
                 </div>
             </article>
             <p id="appointments-empty" th:if="${appointments.isEmpty()}" class="py-12 text-center text-sm text-slate-500">Записей пока нет. Вы можете выбрать врача и создать новую запись.</p>

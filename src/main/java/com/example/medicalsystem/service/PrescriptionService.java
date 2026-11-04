@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +21,9 @@ public class PrescriptionService {
     private final MedicalRecordRepository medicalRecordRepository;
     private final ServiceRepository serviceRepository;
 
+    @Value("${app.demo-data.enabled:false}")
+    private boolean demoDataEnabled;
+
     public PrescriptionService(PrescriptionRepository repository,
                                MedicalRecordRepository medicalRecordRepository,
                                ServiceRepository serviceRepository) {
@@ -30,6 +34,9 @@ public class PrescriptionService {
 
     @PostConstruct
     public void init() {
+        if (!demoDataEnabled) {
+            return;
+        }
         long count = repository.count();
         for (int i = (int) count + 1; i <= 10; i++) {
             Prescription prescription = new Prescription();

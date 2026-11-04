@@ -35,10 +35,20 @@ class DashboardViewTest {
         WebContext context = new WebContext(exchange, Locale.forLanguageTag("ru"));
         context.setVariable("patient", patient);
         context.setVariable("patientAppointments", List.of());
+        context.setVariable("nextAppointment", null);
+        context.setVariable("patientDoctors", List.of(
+                new com.example.medicalsystem.controller.MainController.DoctorCard(12, "Анна Иванова", "Терапия", "АИ", true)));
+        context.setVariable("patientSpecialties", List.of(
+                new com.example.medicalsystem.controller.MainController.SpecialtyCard(4, "Терапия", "✚", 1)));
         String html = engine.process("patient_dashboard", context);
-        assertTrue(html.contains("Здравствуйте, <span>Анна</span>!</h1>"));
-        assertTrue(html.contains("Ближайшие записи"));
-        assertTrue(html.contains("Записи на приём"));
+        assertTrue(html.contains("Медицина,"));
+        assertTrue(html.contains("Ближайшая запись"));
+        assertTrue(html.contains("Наши направления"));
+        assertTrue(html.contains("Наши врачи"));
+        assertTrue(html.contains("Анна Иванова"));
+        assertTrue(html.contains("specialtyId=4"));
+        assertTrue(html.contains("doctorId=12"));
+        assertTrue(html.contains("/appointments/new"));
         assertTrue(!html.contains("Рабочее пространство"));
     }
 
@@ -71,5 +81,43 @@ class DashboardViewTest {
         assertTrue(html.contains("Здравствуйте, <span>Рамиз</span>!"));
         assertTrue(html.contains("Расписание на сегодня"));
         assertTrue(html.contains("На сегодня приёмов нет."));
+    }
+
+    @Test
+    void adminDashboardRendersIndependentOverviewAndEmptyStates() {
+        ClassLoaderTemplateResolver templates = new ClassLoaderTemplateResolver();
+        templates.setPrefix("templates/");
+        templates.setSuffix(".html");
+        templates.setCharacterEncoding("UTF-8");
+        SpringTemplateEngine engine = new SpringTemplateEngine();
+        engine.setTemplateResolver(templates);
+
+        MockServletContext servletContext = new MockServletContext();
+        var exchange = JakartaServletWebApplication.buildApplication(servletContext)
+                .buildExchange(new MockHttpServletRequest(servletContext), new MockHttpServletResponse());
+        WebContext context = new WebContext(exchange, Locale.forLanguageTag("ru"));
+        context.setVariable("role", "ADMIN");
+        context.setVariable("activePage", "dashboard");
+        context.setVariable("currentUsername", "admin");
+        context.setVariable("adminName", "admin");
+        context.setVariable("welcomeMessage", "Добрый день");
+        context.setVariable("today", java.time.LocalDate.now());
+        context.setVariable("appointmentsToday", 0L);
+        context.setVariable("patientCount", 0L);
+        context.setVariable("doctorCount", 0L);
+        context.setVariable("upcomingAppointments", List.of());
+        context.setVariable("nextAppointment", null);
+        context.setVariable("departmentStats", List.of());
+        context.setVariable("maxDepartmentCount", 0L);
+        context.setVariable("todayAppointments", List.of());
+
+        String html = engine.process("admin_dashboard", context);
+
+        assertTrue(html.contains("Добрый день"));
+        assertTrue(html.contains("admin"));
+        assertTrue(html.contains("Ближайшие записи"));
+        assertTrue(html.contains("Предстоящих записей пока нет."));
+        assertTrue(html.contains("Сегодня на приёме"));
+        assertTrue(html.contains("Сегодня на приёме записей нет."));
     }
 }

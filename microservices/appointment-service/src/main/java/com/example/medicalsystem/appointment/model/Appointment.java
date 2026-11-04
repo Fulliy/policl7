@@ -20,7 +20,10 @@ public class Appointment {
     @Size(max = 500) private String complaint;
     @NotNull @Column(name = "id_user", nullable = false) private Integer userId;
     @Column(name = "id_doctor") private Integer doctorId;
-    @NotNull @Column(name = "id_department", nullable = false) private Integer departmentId;
+    @Column(name = "id_department") private Integer departmentId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "appointment_type", nullable = false, length = 20)
+    private AppointmentType type = AppointmentType.DOCTOR_VISIT;
     public Appointment() { }
     public Integer getIdAppointment() { return idAppointment; }
     public LocalDateTime getAppointmentDate() { return appointmentDate; }
@@ -35,4 +38,6 @@ public class Appointment {
     public void setDoctorId(Integer value) { doctorId = value; }
     public Integer getDepartmentId() { return departmentId; }
     public void setDepartmentId(Integer value) { departmentId = value; }
+    public AppointmentType getType() { return type; }
+    public void setType(AppointmentType value) { type = value; }
 }

@@ -53,7 +53,7 @@ public class WebSecurityConfig {
                 .authenticationProvider(authenticationProvider(dataSource))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/login", "/registration", "/register", "/access-denied", "/error",
-                                "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api/auth/register").permitAll()
+                                "/api/auth/register").permitAll()
                         .requestMatchers("/", "/index").authenticated()
                         .requestMatchers("/admin/**", "/users/**", "/roles/**", "/departments/**", "/specialties/**")
                         .hasAuthority("ADMIN")

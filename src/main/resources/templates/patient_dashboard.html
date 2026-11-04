@@ -1,54 +1,133 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout :: portalPage('Главная', 'dashboard', ~{::content})}">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script src="https://cdn.tailwindcss.com"></script></head>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5faf9">
+    <title>Личный кабинет пациента · Забота</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/patient-home.css}">
+</head>
 <body>
-<main th:fragment="content" class="space-y-7">
-    <section class="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-        <div><p class="mb-2 text-sm font-semibold text-clinic-600">ЛИЧНЫЙ КАБИНЕТ</p><h1 class="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Здравствуйте, <span th:text="${patient.firstName}">Иван</span>!</h1><p class="mt-2 text-sm text-slate-500">Здесь собрана важная информация о вашем здоровье.</p></div>
-        <a th:href="@{/appointments/new}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-clinic-500 px-5 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-clinic-600"><span aria-hidden="true">＋</span>Записаться к врачу</a>
-    </section>
-    <section class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card sm:p-6" aria-labelledby="next-appointments-title">
-        <div class="mb-5 flex flex-wrap items-center justify-between gap-3"><div><h2 id="next-appointments-title" class="text-lg font-bold text-ink">Ближайшие записи</h2><p class="mt-1 text-sm text-slate-500">Предстоящие визиты к специалистам</p></div><a th:href="@{/appointments}" class="text-sm font-semibold text-clinic-700 hover:text-clinic-600">Все записи <span aria-hidden="true">→</span></a></div>
-        <div class="divide-y divide-slate-100">
-            <article th:each="appointment : ${patientAppointments}" th:if="${appointment.status == null or !appointment.status.equalsIgnoreCase('Отменен')}"
-                     th:attr="data-appointment-date=${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'yyyy-MM-dd''T''HH:mm') : ''}"
-                     class="patient-upcoming grid gap-4 py-4 first:pt-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
-                    <div><p class="font-semibold text-ink" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'd MMMM yyyy') : 'Дата уточняется'}">12 ноября 2026</p><p class="mt-1 text-sm text-slate-500" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'HH:mm') : 'Время уточняется'}">10:30</p></div>
-                    <div><p class="text-sm font-semibold text-slate-800" th:text="${appointment.doctor != null ? appointment.doctor.displayName : 'Врач уточняется'}">Иванов Иван Иванович</p><p class="mt-1 text-sm text-slate-500" th:text="${appointment.doctor != null and appointment.doctor.specialty != null ? appointment.doctor.specialty.specialtyName : 'Специальность уточняется'}">Терапевт</p></div>
-                    <p class="text-sm text-slate-500 lg:col-span-2" th:text="${appointment.department != null ? appointment.department.departmentName : 'Медицинский центр'}">Терапевтическое отделение</p>
-                    <span class="w-fit rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${appointment.status}">Запланирован</span>
-                </div>
-                <div class="flex flex-wrap gap-2"><a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 hover:bg-clinic-50">Перенести</a><button type="button" data-cancel-appointment class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Отменить</button></div>
-            </article>
-            <p id="patient-appointments-empty" th:if="${patientAppointments.isEmpty()}" class="py-8 text-center text-sm text-slate-500">У вас пока нет предстоящих записей.</p>
-            <p id="patient-appointments-filter-empty" th:unless="${patientAppointments.isEmpty()}" class="hidden py-8 text-center text-sm text-slate-500">Ближайших записей пока нет.</p>
-            <article th:remove="all" class="grid gap-4 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center"><div><p class="font-semibold text-ink">12 ноября 2026</p><p class="mt-1 text-sm text-slate-500">10:30</p></div><div><p class="text-sm font-semibold text-slate-800">Иванов Иван Иванович</p><p class="mt-1 text-sm text-slate-500">Терапевт</p></div><p class="text-sm text-slate-500 lg:col-span-2">Терапевтическое отделение</p><span class="w-fit rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700">Запланирован</span></div><div class="flex flex-wrap gap-2"><a href="/appointments/new" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700">Перенести</a><button type="button" class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600">Отменить</button></div></article>
+<header class="site-header">
+    <a class="brand" th:href="@{/}" aria-label="Забота — главная">
+        <span class="brand-mark" aria-hidden="true">+</span><span>Забота<small>медицинский центр</small></span>
+    </a>
+    <button class="nav-toggle" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="main-nav">☰</button>
+    <nav id="main-nav" class="main-nav" aria-label="Основная навигация">
+        <a class="nav-active" th:href="@{/}">Главная</a>
+        <a th:href="@{/appointments}">Мои записи</a>
+        <a href="#doctors">Врачи</a>
+        <a href="#contacts">Контакты</a>
+    </nav>
+    <div class="account-menu">
+        <span class="account-name" th:text="${patient.firstName + ' ' + patient.surname}">Пациент</span>
+        <form th:action="@{/logout}" method="post"><button class="logout-button" type="submit">Выйти</button></form>
+    </div>
+</header>
+
+<main>
+    <section class="hero section-shell">
+        <div class="hero-copy">
+            <span class="eyebrow"><span class="eyebrow-dot"></span>Здоровье начинается с заботы</span>
+            <h1>Медицина,<br><em>которой можно доверять</em></h1>
+            <p class="hero-text">Записывайтесь к специалистам, следите за визитами и оставайтесь на связи с нашей клиникой — всё в одном месте.</p>
+            <div class="hero-actions">
+                <a class="button button-primary" th:href="@{/appointments/new}">Записаться на приём <span aria-hidden="true">→</span></a>
+                <a class="button button-quiet" th:href="@{/appointments}">Мои записи</a>
+            </div>
+            <div class="trust-note"><span class="trust-icon" aria-hidden="true">✓</span> Бережный подход и внимание к каждому пациенту</div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+            <div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div>
+            <div class="art-cross" aria-hidden="true">+</div>
+            <div class="care-visual">
+                <span class="care-visual-kicker">ВАША КЛИНИКА</span>
+                <span class="care-visual-mark">+</span>
+                <strong>Забота<br>о здоровье</strong>
+                <span class="care-visual-caption">начинается с внимания</span>
+                <div class="care-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+            <div class="hero-note note-top"><span class="note-icon">♡</span><span><b>Врачи рядом</b><small>Заботимся о важном</small></span></div>
+            <div class="hero-note note-bottom"><span class="note-check">✓</span><span><b>Удобная запись</b><small>В пару простых шагов</small></span></div>
+            <div class="art-caption">Внимательная медицина каждый день</div>
         </div>
     </section>
-    <section aria-labelledby="patient-shortcuts-title">
-        <div class="mb-4"><h2 id="patient-shortcuts-title" class="text-lg font-bold text-ink">Быстрый доступ</h2><p class="mt-1 text-sm text-slate-500">Основные разделы вашего кабинета</p></div>
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <a th:href="@{/appointments}" class="group rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-700">▣</span><h3 class="font-semibold text-ink">Записи на приём</h3><p class="mt-1 text-sm text-slate-500">Ваши предстоящие и прошедшие визиты</p></a>
-            <button type="button" data-coming-soon class="rounded-2xl border border-[#dcece9] bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-700">♡</span><h3 class="font-semibold text-ink">Медкарта</h3><p class="mt-1 text-sm text-slate-500">История медицинских записей · Скоро</p></button>
-            <button type="button" data-coming-soon class="rounded-2xl border border-[#dcece9] bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-700">↗</span><h3 class="font-semibold text-ink">Направления</h3><p class="mt-1 text-sm text-slate-500">Назначения специалистов · Скоро</p></button>
-            <button type="button" data-coming-soon class="rounded-2xl border border-[#dcece9] bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100"><span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-700">⌖</span><h3 class="font-semibold text-ink">Прикрепления</h3><p class="mt-1 text-sm text-slate-500">Ваше медицинское учреждение · Скоро</p></button>
+
+    <section class="section-shell appointment-section" aria-labelledby="next-visit-title">
+        <div class="section-heading heading-inline"><div><span class="section-kicker">ВАШ КАБИНЕТ</span><h2 id="next-visit-title">Ближайшая запись</h2></div><a class="text-link" th:href="@{/appointments}">Все записи <span aria-hidden="true">→</span></a></div>
+        <article class="next-visit" th:if="${nextAppointment != null}">
+            <div class="visit-date"><span class="calendar-icon" aria-hidden="true">▦</span><div><small>Дата и время</small><strong th:text="${#temporals.format(nextAppointment.appointmentDate, 'd MMMM yyyy')}">12 ноября 2026</strong><span th:text="${#temporals.format(nextAppointment.appointmentDate, 'HH:mm')}">10:30</span></div></div>
+            <div class="visit-detail"><small th:text="${nextAppointment.type != null and nextAppointment.type.name() == 'SERVICE' ? 'Услуга' : 'Специалист'}">Специалист</small><strong th:text="${nextAppointment.type != null and nextAppointment.type.name() == 'SERVICE' ? #strings.listJoin(nextAppointment.services.![serviceName], ', ') : (nextAppointment.doctor != null ? nextAppointment.doctor.displayName : 'Врач уточняется')}">Врач</strong><span th:if="${nextAppointment.type == null or nextAppointment.type.name() != 'SERVICE'}" th:text="${nextAppointment.doctor != null and nextAppointment.doctor.specialty != null ? nextAppointment.doctor.specialty.specialtyName : 'Специальность уточняется'}">Специальность</span></div>
+            <div class="visit-detail"><small>Отделение</small><strong th:text="${nextAppointment.department != null ? nextAppointment.department.departmentName : (nextAppointment.type != null and nextAppointment.type.name() == 'SERVICE' ? 'Запись на услуги' : 'Отделение уточняется')}">Отделение</strong><span class="status-chip" th:text="${nextAppointment.status}">Запланирован</span></div>
+            <a class="visit-link" th:href="@{/appointments}">Подробнее <span aria-hidden="true">↗</span></a>
+        </article>
+        <article class="empty-visit" th:if="${nextAppointment == null}">
+            <span class="empty-icon" aria-hidden="true">♡</span><div><h3>Пока нет запланированных визитов</h3><p>Выберите специалиста — мы поможем подобрать удобное время.</p></div>
+            <a class="button button-primary" th:href="@{/appointments/new}">Записаться <span aria-hidden="true">→</span></a>
+        </article>
+    </section>
+
+    <section class="section-shell content-section" id="specialties" aria-labelledby="specialties-title">
+        <div class="section-heading"><div><span class="section-kicker">ПОМОГАЕМ БЫТЬ ЗДОРОВЫМИ</span><h2 id="specialties-title">Наши направления</h2></div><p>Выберите направление, чтобы перейти к записи</p></div>
+        <div class="specialty-grid">
+            <a class="specialty-card" th:each="specialty : ${patientSpecialties}"
+               th:href="${specialty.id != null ? '/appointments/new?specialtyId=' + specialty.id : '/appointments/new'}">
+                <span class="specialty-icon" aria-hidden="true" th:text="${specialty.icon}">✚</span>
+                <h3 th:text="${specialty.name}">Терапия</h3>
+                <p th:text="${specialty.doctorCount > 0 ? specialty.doctorCount + ' специалиста' : 'Запись на консультацию'}">Запись на консультацию</p>
+                <span class="card-arrow" aria-hidden="true">↗</span>
+            </a>
         </div>
     </section>
-    <script>
-        (() => {
-            const rows = [...document.querySelectorAll('.patient-upcoming')];
-            const now = new Date();
-            const upcoming = rows.filter((row) => !row.dataset.appointmentDate || new Date(row.dataset.appointmentDate) >= now)
-                .sort((a, b) => new Date(a.dataset.appointmentDate) - new Date(b.dataset.appointmentDate));
-            rows.forEach((row) => { row.hidden = !upcoming.slice(0, 3).includes(row); });
-            const empty = document.getElementById('patient-appointments-empty');
-            if (empty) empty.classList.toggle('hidden', upcoming.length > 0);
-            const filteredEmpty = document.getElementById('patient-appointments-filter-empty');
-            if (filteredEmpty) filteredEmpty.classList.toggle('hidden', upcoming.length > 0);
-        })();
-    </script>
+
+    <section class="doctors-band" id="doctors" aria-labelledby="doctors-title">
+        <div class="section-shell content-section">
+            <div class="section-heading"><div><span class="section-kicker">КОМАНДА «ЗАБОТЫ»</span><h2 id="doctors-title">Наши врачи</h2></div><a class="text-link" th:href="@{/appointments/new}">Выбрать врача <span aria-hidden="true">→</span></a></div>
+            <div class="doctor-grid">
+                <article class="doctor-card" th:each="doctor : ${patientDoctors}">
+                    <div class="doctor-avatar" th:classappend="${doctorStat.index % 4 == 1 ? ' avatar-mint' : (doctorStat.index % 4 == 2 ? ' avatar-sand' : (doctorStat.index % 4 == 3 ? ' avatar-lilac' : ''))}">
+                        <span th:text="${doctor.initials}">ВТ</span><i aria-hidden="true">✚</i>
+                    </div>
+                    <div class="doctor-info"><h3 th:text="${doctor.fullName}">Имя врача</h3><p th:text="${doctor.specialty}">Специальность</p>
+                        <a th:if="${doctor.fromDatabase}" th:href="@{/appointments/new(doctorId=${doctor.id})}">Записаться <span aria-hidden="true">→</span></a>
+                        <a th:unless="${doctor.fromDatabase}" th:href="@{/appointments/new}">Записаться <span aria-hidden="true">→</span></a>
+                    </div>
+                </article>
+            </div>
+            <p class="data-note" th:if="${patientDoctors != null and !patientDoctors.isEmpty() and !patientDoctors[0].fromDatabase}">Список специалистов будет обновлён после добавления врачей в систему.</p>
+        </div>
+    </section>
+
+    <section class="section-shell content-section why-section" aria-labelledby="why-title">
+        <div class="section-heading"><div><span class="section-kicker">НАША ФИЛОСОФИЯ</span><h2 id="why-title">Почему выбирают нас</h2></div></div>
+        <div class="benefit-grid">
+            <article class="benefit-card"><span class="benefit-icon">✦</span><h3>Опытные специалисты</h3><p>Внимательно разбираемся в ситуации и объясняем каждый шаг.</p></article>
+            <article class="benefit-card"><span class="benefit-icon">⌁</span><h3>Современный подход</h3><p>Используем актуальные медицинские знания и технологии.</p></article>
+            <article class="benefit-card"><span class="benefit-icon">◷</span><h3>Удобная запись онлайн</h3><p>Планируйте визит в личном кабинете в удобное время.</p></article>
+            <article class="benefit-card"><span class="benefit-icon">♡</span><h3>Забота о пациенте</h3><p>Создаём спокойную и уважительную атмосферу на каждом этапе.</p></article>
+        </div>
+    </section>
+
+    <section class="section-shell contacts-section" id="contacts" aria-labelledby="contacts-title">
+        <div class="contacts-copy"><span class="section-kicker">МЫ НА СВЯЗИ</span><h2 id="contacts-title">Контакты и режим работы</h2><p>Уточнить адрес, телефон регистратуры и часы приёма можно у администратора клиники.</p><a class="button button-primary" th:href="@{/appointments}">Перейти к записям <span aria-hidden="true">→</span></a></div>
+        <div class="contact-card"><div class="contact-row"><span class="contact-icon">⌖</span><div><small>Адрес</small><strong>Информация уточняется в регистратуре</strong></div></div><div class="contact-row"><span class="contact-icon">◷</span><div><small>Режим работы</small><strong>Актуальное расписание уточняйте в клинике</strong></div></div><div class="contact-row"><span class="contact-icon">☎</span><div><small>Телефон</small><strong>Номер регистратуры уточняется</strong></div></div></div>
+    </section>
 </main>
+
+<footer class="site-footer"><a class="brand footer-brand" th:href="@{/}"><span class="brand-mark" aria-hidden="true">+</span><span>Забота<small>медицинский центр</small></span></a><p>Ваше здоровье — в надёжных руках</p><span>© <span th:text="${#dates.year(#dates.createNow())}">2026</span> Медицинский центр «Забота»</span></footer>
+<script>
+    (() => {
+        const toggle = document.querySelector('.nav-toggle');
+        const nav = document.querySelector('#main-nav');
+        toggle.addEventListener('click', () => {
+            const open = toggle.getAttribute('aria-expanded') !== 'true';
+            toggle.setAttribute('aria-expanded', String(open));
+            nav.classList.toggle('nav-open', open);
+        });
+    })();
+</script>
 </body>
 </html>

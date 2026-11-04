@@ -1,6 +1,7 @@
 package com.example.medicalsystem.appointment.service;
 
 import com.example.medicalsystem.appointment.model.Appointment;
+import com.example.medicalsystem.appointment.model.AppointmentType;
 import com.example.medicalsystem.appointment.repository.AppointmentRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -40,10 +41,15 @@ public class AppointmentService {
     }
 
     public Appointment create(AppointmentRequest request, Authentication auth) {
-        validateDepartment(request.departmentId());
+        AppointmentType type = request.type() == null ? AppointmentType.DOCTOR_VISIT : request.type();
+        validateType(request, type, auth);
+        if (!isPatient(auth) && (request.status() == null || request.status().isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Укажите статус записи.");
+        }
         Appointment value = new Appointment();
         value.setAppointmentDate(request.appointmentDate());
         value.setComplaint(request.complaint());
+        value.setType(type);
         value.setDepartmentId(request.departmentId());
         if (isPatient(auth)) {
             value.setUserId(currentUserId(auth));
@@ -59,27 +65,42 @@ public class AppointmentService {
         } else {
             throw new AccessDeniedException("Недостаточно прав");
         }
-        return appointments.save(value);
+        if (type == AppointmentType.DOCTOR_VISIT && isPatient(auth)) value.setDoctorId(request.doctorId());
+        if (type == AppointmentType.SERVICE) value.setDoctorId(null);
+        Appointment saved = appointments.save(value);
+        replaceServices(saved.getIdAppointment(), request.serviceIds());
+        return saved;
     }
 
     public Appointment update(Integer id, AppointmentRequest request, Authentication auth) {
         Appointment value = require(id);
         checkOwnerOrAssignedDoctor(value, auth);
-        validateDepartment(request.departmentId());
+        AppointmentType type = request.type() == null ? value.getType() : request.type();
+        validateType(request, type, auth);
+        if (!isPatient(auth) && (request.status() == null || request.status().isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Укажите статус записи.");
+        }
         value.setAppointmentDate(request.appointmentDate());
         value.setComplaint(request.complaint());
+        value.setType(type);
         value.setDepartmentId(request.departmentId());
         if (!isPatient(auth)) {
             value.setStatus(request.status());
             if (request.userId() != null) value.setUserId(requireUserId(request.userId()));
             if (has(auth, "ADMIN")) value.setDoctorId(request.doctorId());
+            if (has(auth, "DOCTOR")) value.setDoctorId(currentUserId(auth));
         }
-        return appointments.save(value);
+        if (type == AppointmentType.DOCTOR_VISIT && isPatient(auth)) value.setDoctorId(request.doctorId());
+        if (type == AppointmentType.SERVICE) value.setDoctorId(null);
+        Appointment saved = appointments.save(value);
+        replaceServices(saved.getIdAppointment(), request.serviceIds());
+        return saved;
     }
 
     public void delete(Integer id, Authentication auth) {
         Appointment value = require(id);
         checkOwnerOrAssignedDoctor(value, auth);
+        jdbc.update("delete from appointment_services where id_appointment=?", id);
         appointments.delete(value);
     }
 
@@ -113,6 +134,53 @@ public class AppointmentService {
         }
     }
 
+    private void validateType(AppointmentRequest request, AppointmentType type, Authentication auth) {
+        List<Integer> ids = request.serviceIds() == null ? List.of() : request.serviceIds().stream().distinct().toList();
+        if (type == AppointmentType.DOCTOR_VISIT) {
+            validateDepartment(request.departmentId());
+            Integer doctorId = has(auth, "DOCTOR") ? currentUserId(auth) : request.doctorId();
+            if (doctorId == null || !Boolean.TRUE.equals(jdbc.queryForObject(
+                    "select exists(select 1 from users u join user_role r on r.user_id=u.id_user "
+                            + "where u.id_user=? and u.id_department=? and r.roles='DOCTOR')",
+                    Boolean.class, doctorId, request.departmentId()))) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Для приёма врача выберите врача из выбранного отделения.");
+            }
+            if (!ids.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Для приёма врача нельзя передавать услуги.");
+        } else if (type == AppointmentType.SERVICE) {
+            if (request.departmentId() != null || request.doctorId() != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Для записи на услуги нельзя указывать врача или отделение.");
+            }
+            if (ids.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Выберите хотя бы одну услугу.");
+            Integer found = jdbc.queryForObject("select count(distinct id_service) from services where id_service in ("
+                    + ids.stream().map(x -> "?").collect(java.util.stream.Collectors.joining(",")) + ")",
+                    Integer.class, ids.toArray());
+            if (found == null || found != ids.size()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Одна или несколько выбранных услуг не найдены.");
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Неизвестный тип записи.");
+        }
+    }
+
+    private void replaceServices(Integer appointmentId, List<Integer> serviceIds) {
+        jdbc.update("delete from appointment_services where id_appointment=?", appointmentId);
+        if (serviceIds == null) return;
+        serviceIds.stream().distinct().forEach(serviceId -> jdbc.update(
+                "insert into appointment_services (id_appointment, id_service) values (?, ?)", appointmentId, serviceId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ServiceSummary> servicesFor(Integer appointmentId) {
+        return jdbc.query("select s.id_service, s.service_name, s.cost from appointment_services aps "
+                        + "join services s on s.id_service=aps.id_service where aps.id_appointment=? order by s.id_service",
+                (rs, row) -> new ServiceSummary(rs.getInt(1), rs.getString(2), rs.getInt(3)), appointmentId);
+    }
+
+    public record ServiceSummary(Integer id, String name, Integer cost) { }
+
     private Appointment require(Integer id) {
         return appointments.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
@@ -126,5 +194,6 @@ public class AppointmentService {
     }
 
     public record AppointmentRequest(java.time.LocalDateTime appointmentDate, String status, String complaint,
-                                     Integer userId, Integer departmentId, Integer doctorId) { }
+                                     Integer userId, Integer departmentId, Integer doctorId,
+                                     AppointmentType type, List<Integer> serviceIds) { }
 }

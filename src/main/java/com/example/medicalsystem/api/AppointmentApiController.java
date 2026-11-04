@@ -28,4 +28,8 @@ public class AppointmentApiController {
     }
     @DeleteMapping("/{id}") @Operation(summary = "Удалить запись")
     public void delete(@PathVariable Integer id, @AuthenticationPrincipal UserDetails user) { api.deleteAppointment(id, user); }
+    @PostMapping("/{id}/cancel") @Operation(summary = "Отменить запись без удаления")
+    public SystemApiService.AppointmentDto cancel(@PathVariable Integer id, @AuthenticationPrincipal UserDetails user) {
+        return api.cancelAppointment(id, user);
+    }
 }

@@ -6,6 +6,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,19 +17,34 @@ public class ServiceEntityService {
 
     private final ServiceRepository repository;
 
+    @Value("${app.demo-data.enabled:false}")
+    private boolean demoDataEnabled;
+
     public ServiceEntityService(ServiceRepository repository) {
         this.repository = repository;
     }
 
     @PostConstruct
     public void init() {
-        long count = repository.count();
-        for (int i = (int) count + 1; i <= 10; i++) {
-            MedicalServiceEntity service = new MedicalServiceEntity();
-            service.setServiceName("Услуга " + i);
-            service.setCost(1000 + i * 100);
-            service.setDescription("Описание услуги " + i);
-            repository.save(service);
+        if (!demoDataEnabled) {
+            return;
+        }
+        String[] names = {"Консультация терапевта", "УЗИ", "МРТ", "Анализ крови", "ЭКГ",
+                "Консультация кардиолога", "Консультация невролога", "Консультация травматолога",
+                "Рентгенография", "Консультация педиатра", "Общий анализ мочи"};
+        int[] costs = {1500, 2500, 5000, 800, 1200, 1600, 1700, 1800, 1900, 2000, 400};
+        if (repository.count() == 0) {
+            for (int i = 0; i < names.length; i++) {
+                repository.save(new MedicalServiceEntity(null, names[i], costs[i], names[i]));
+            }
+            return;
+        }
+        for (int i = 0; i < names.length; i++) {
+            int id = i + 1;
+            repository.findById(id).ifPresent(service -> {
+                service.setServiceName(names[id - 1]);
+                repository.save(service);
+            });
         }
     }
 

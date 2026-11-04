@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -29,7 +28,7 @@ public class UserService {
     private final SpecialtyRepository specialtyRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${app.demo-data.enabled:true}")
+    @Value("${app.demo-data.enabled:false}")
     private boolean demoDataEnabled;
 
     public UserService(UserRepository repository,
@@ -54,7 +53,7 @@ public class UserService {
                 "Администратор",
                 "Системы",
                 "+79001112200",
-                EnumSet.of(RoleEnum.ADMIN, RoleEnum.DOCTOR, RoleEnum.PATIENT)
+                EnumSet.of(RoleEnum.ADMIN)
         );
         ensureDemoUser(
                 "doctor",
@@ -74,8 +73,6 @@ public class UserService {
                 "+79001112202",
                 EnumSet.of(RoleEnum.PATIENT)
         );
-
-        normalizeExistingUsers();
 
         long count = repository.count();
         for (int i = (int) count + 1; i <= 10; i++) {
@@ -226,9 +223,10 @@ public class UserService {
                                 String middleName,
                                 String phone,
                                 Set<RoleEnum> roles) {
-        User user = repository.findByUsername(username)
-                .or(() -> repository.findByEmail(email))
-                .orElseGet(User::new);
+        if (repository.findByUsername(username).isPresent() || repository.findByEmail(email).isPresent()) {
+            return;
+        }
+        User user = new User();
 
         user.setUsername(username);
         user.setSurname(surname);
@@ -246,57 +244,6 @@ public class UserService {
         user.setDepartment(departmentRepository.findById(1).orElse(null));
         user.setSpecialty(specialtyRepository.findById(1).orElse(null));
         repository.save(user);
-    }
-
-    private void normalizeExistingUsers() {
-        List<User> users = repository.findAll();
-        boolean adminExists = users.stream()
-                .anyMatch(user -> user.getRoles() != null && user.getRoles().contains(RoleEnum.ADMIN));
-        Set<String> reservedUsernames = new HashSet<>();
-
-        for (User user : users) {
-            boolean changed = false;
-
-            if (user.getRoles() == null || user.getRoles().isEmpty()) {
-                if (!adminExists) {
-                    user.setRoles(EnumSet.of(RoleEnum.ADMIN, RoleEnum.DOCTOR, RoleEnum.PATIENT));
-                    adminExists = true;
-                } else {
-                    user.setRoles(EnumSet.of(RoleEnum.PATIENT));
-                }
-                changed = true;
-            }
-
-            if (!isEncoded(user.getPassword())) {
-                user.setPassword(passwordEncoder.encode(user.getPassword()));
-                changed = true;
-            }
-
-            if (user.getUsername() == null || user.getUsername().isBlank()) {
-                String baseUsername = user.getEmail() != null && user.getEmail().contains("@")
-                        ? user.getEmail().substring(0, user.getEmail().indexOf('@'))
-                        : "user" + user.getIdUser();
-                user.setUsername(generateUniqueUsername(baseUsername, user.getIdUser(), reservedUsernames));
-                changed = true;
-            } else {
-                reservedUsernames.add(user.getUsername());
-            }
-
-            if (!user.isActive()) {
-                user.setActive(true);
-                changed = true;
-            }
-
-            Integer legacyRoleId = mapLegacyRoleId(user.getRoles());
-            if (user.getIdRole() == null || !user.getIdRole().equals(legacyRoleId)) {
-                user.setIdRole(legacyRoleId);
-                changed = true;
-            }
-
-            if (changed) {
-                repository.save(user);
-            }
-        }
     }
 
     private Set<RoleEnum> normalizeRoles(Set<RoleEnum> roles) {

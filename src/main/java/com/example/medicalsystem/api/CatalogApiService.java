@@ -104,55 +104,77 @@ public class CatalogApiService {
     }
 
     @GetMapping("/medical-records")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR', 'PATIENT')")
     @Tag(name = "Медицинские записи")
     @Operation(summary = "Получить список медицинских записей")
-    public List<MedicalRecordDto> medicalRecords() {
-        return medicalRecordService.findAll().stream().map(CatalogApiService::toDto).toList();
+    public List<MedicalRecordDto> medicalRecords(org.springframework.security.core.Authentication auth) {
+        if (hasAuthority(auth, "PATIENT") && !hasAuthority(auth, "DOCTOR") && !hasAuthority(auth, "ADMIN")) {
+            User patient = userService.findByUsername(auth.getName());
+            return appointmentService.findByUser(patient.getIdUser()).stream()
+                    .flatMap(appointment -> medicalRecordService.findByAppointment(appointment.getIdAppointment()).stream())
+                    .map(CatalogApiService::toDto).toList();
+        }
+        if (hasAuthority(auth, "DOCTOR") && !hasAuthority(auth, "ADMIN")) {
+            User doctor = userService.findByUsername(auth.getName());
+            return appointmentService.findByDoctor(doctor.getIdUser()).stream()
+                    .flatMap(appointment -> medicalRecordService.findByAppointment(appointment.getIdAppointment()).stream())
+                    .map(CatalogApiService::toDto).toList();
+        }
+        throw new org.springframework.security.access.AccessDeniedException("Доступ к медицинским данным запрещён");
     }
 
     @GetMapping("/medical-records/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR', 'PATIENT')")
     @Tag(name = "Медицинские записи")
     @Operation(summary = "Получить медицинскую запись по ID")
-    public MedicalRecordDto medicalRecord(@PathVariable Integer id) {
-        return toDto(require(medicalRecordService.findById(id)));
+    public MedicalRecordDto medicalRecord(@PathVariable Integer id, org.springframework.security.core.Authentication auth) {
+        MedicalRecord record = require(medicalRecordService.findById(id));
+        ensureMedicalRecordAccess(record, auth);
+        return toDto(record);
     }
 
     @PostMapping("/medical-records")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAuthority('DOCTOR')")
     @Tag(name = "Медицинские записи")
     @Operation(summary = "Создать медицинскую запись")
-    public MedicalRecordDto createMedicalRecord(@Valid @RequestBody MedicalRecordDto request) {
+    public MedicalRecordDto createMedicalRecord(@Valid @RequestBody MedicalRecordDto request, org.springframework.security.core.Authentication auth) {
+        requireAssignedDoctor(auth);
+        Appointment appointment = require(appointmentService.findById(request.appointmentId()));
+        ensureAppointmentAccess(appointment, auth);
         MedicalRecord value = new MedicalRecord();
         value.setDiagnosis(request.diagnosis());
         value.setTreatment(request.treatment());
         value.setRecommendations(request.recommendations());
         value.setCreatedDate(request.createdDate());
-        value.setAppointment(require(appointmentService.findById(request.appointmentId())));
+        value.setAppointment(appointment);
         return toDto(medicalRecordService.save(value));
     }
 
     @PutMapping("/medical-records/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAuthority('DOCTOR')")
     @Tag(name = "Медицинские записи")
     @Operation(summary = "Изменить медицинскую запись")
-    public MedicalRecordDto updateMedicalRecord(@PathVariable Integer id, @Valid @RequestBody MedicalRecordDto request) {
+    public MedicalRecordDto updateMedicalRecord(@PathVariable Integer id, @Valid @RequestBody MedicalRecordDto request, org.springframework.security.core.Authentication auth) {
+        requireAssignedDoctor(auth);
         MedicalRecord value = require(medicalRecordService.findById(id));
+        ensureMedicalRecordAccess(value, auth);
+        Appointment targetAppointment = require(appointmentService.findById(request.appointmentId()));
+        ensureAppointmentAccess(targetAppointment, auth);
         value.setDiagnosis(request.diagnosis());
         value.setTreatment(request.treatment());
         value.setRecommendations(request.recommendations());
         value.setCreatedDate(request.createdDate());
-        value.setAppointment(require(appointmentService.findById(request.appointmentId())));
+        value.setAppointment(targetAppointment);
         return toDto(medicalRecordService.save(value));
     }
 
     @DeleteMapping("/medical-records/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAuthority('DOCTOR')")
     @Tag(name = "Медицинские записи")
     @Operation(summary = "Удалить медицинскую запись")
-    public void deleteMedicalRecord(@PathVariable Integer id) {
-        require(medicalRecordService.findById(id));
+    public void deleteMedicalRecord(@PathVariable Integer id, org.springframework.security.core.Authentication auth) {
+        requireAssignedDoctor(auth);
+        ensureMedicalRecordAccess(require(medicalRecordService.findById(id)), auth);
         medicalRecordService.deleteById(id);
     }
 
@@ -206,26 +228,30 @@ public class CatalogApiService {
     }
 
     @GetMapping("/prescriptions")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR', 'PATIENT')")
     @Tag(name = "Назначения")
     @Operation(summary = "Получить список назначений")
-    public List<PrescriptionDto> prescriptions() {
-        return prescriptionService.findAll().stream().map(CatalogApiService::toDto).toList();
+    public List<PrescriptionDto> prescriptions(org.springframework.security.core.Authentication auth) {
+        return visiblePrescriptions(auth);
     }
 
     @GetMapping("/prescriptions/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAnyAuthority('DOCTOR', 'PATIENT')")
     @Tag(name = "Назначения")
     @Operation(summary = "Получить назначение по ID")
-    public PrescriptionDto prescription(@PathVariable Integer id) {
-        return toDto(require(prescriptionService.findById(id)));
+    public PrescriptionDto prescription(@PathVariable Integer id, org.springframework.security.core.Authentication auth) {
+        Prescription value = require(prescriptionService.findById(id));
+        ensureMedicalRecordAccess(require(medicalRecordService.findById(value.getMedicalRecord().getIdRecord())), auth);
+        return toDto(value);
     }
 
     @PostMapping("/prescriptions")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAuthority('DOCTOR')")
     @Tag(name = "Назначения")
     @Operation(summary = "Создать назначение")
-    public PrescriptionDto createPrescription(@Valid @RequestBody PrescriptionDto request) {
+    public PrescriptionDto createPrescription(@Valid @RequestBody PrescriptionDto request, org.springframework.security.core.Authentication auth) {
+        requireAssignedDoctor(auth);
+        ensureMedicalRecordAccess(require(medicalRecordService.findById(request.medicalRecordId())), auth);
         Prescription value = new Prescription();
         value.setMedicationName(request.medicationName());
         value.setDosage(request.dosage());
@@ -237,11 +263,14 @@ public class CatalogApiService {
     }
 
     @PutMapping("/prescriptions/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAuthority('DOCTOR')")
     @Tag(name = "Назначения")
     @Operation(summary = "Изменить назначение")
-    public PrescriptionDto updatePrescription(@PathVariable Integer id, @Valid @RequestBody PrescriptionDto request) {
+    public PrescriptionDto updatePrescription(@PathVariable Integer id, @Valid @RequestBody PrescriptionDto request, org.springframework.security.core.Authentication auth) {
+        requireAssignedDoctor(auth);
         Prescription value = require(prescriptionService.findById(id));
+        ensureMedicalRecordAccess(require(medicalRecordService.findById(value.getMedicalRecord().getIdRecord())), auth);
+        ensureMedicalRecordAccess(require(medicalRecordService.findById(request.medicalRecordId())), auth);
         value.setMedicationName(request.medicationName());
         value.setDosage(request.dosage());
         value.setFrequency(request.frequency());
@@ -252,11 +281,13 @@ public class CatalogApiService {
     }
 
     @DeleteMapping("/prescriptions/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAuthority('DOCTOR')")
     @Tag(name = "Назначения")
     @Operation(summary = "Удалить назначение")
-    public void deletePrescription(@PathVariable Integer id) {
-        require(prescriptionService.findById(id));
+    public void deletePrescription(@PathVariable Integer id, org.springframework.security.core.Authentication auth) {
+        requireAssignedDoctor(auth);
+        Prescription value = require(prescriptionService.findById(id));
+        ensureMedicalRecordAccess(require(medicalRecordService.findById(value.getMedicalRecord().getIdRecord())), auth);
         prescriptionService.deleteById(id);
     }
 
@@ -440,6 +471,49 @@ public class CatalogApiService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Запись не найдена");
         }
         return value;
+    }
+
+    private List<PrescriptionDto> visiblePrescriptions(org.springframework.security.core.Authentication auth) {
+        if (hasAuthority(auth, "PATIENT") && !hasAuthority(auth, "DOCTOR") && !hasAuthority(auth, "ADMIN")) {
+            User patient = userService.findByUsername(auth.getName());
+            return appointmentService.findByUser(patient.getIdUser()).stream()
+                    .flatMap(a -> medicalRecordService.findByAppointment(a.getIdAppointment()).stream())
+                    .flatMap(r -> prescriptionService.findByMedicalRecord(r.getIdRecord()).stream())
+                    .map(CatalogApiService::toDto).toList();
+        }
+        if (hasAuthority(auth, "DOCTOR") && !hasAuthority(auth, "ADMIN")) {
+            User doctor = userService.findByUsername(auth.getName());
+            return appointmentService.findByDoctor(doctor.getIdUser()).stream()
+                    .flatMap(a -> medicalRecordService.findByAppointment(a.getIdAppointment()).stream())
+                    .flatMap(r -> prescriptionService.findByMedicalRecord(r.getIdRecord()).stream())
+                    .map(CatalogApiService::toDto).toList();
+        }
+        return prescriptionService.findAll().stream().map(CatalogApiService::toDto).toList();
+    }
+
+    private void ensureMedicalRecordAccess(MedicalRecord record, org.springframework.security.core.Authentication auth) {
+        Appointment appointment = record.getAppointment();
+        ensureAppointmentAccess(appointment, auth);
+    }
+
+    private void ensureAppointmentAccess(Appointment appointment, org.springframework.security.core.Authentication auth) {
+        if (appointment == null || auth == null) throw new org.springframework.security.access.AccessDeniedException("Доступ запрещён");
+        User actor = userService.findByUsername(auth.getName());
+        boolean allowed = hasAuthority(auth, "DOCTOR") && appointment.getDoctor() != null
+                && actor.getIdUser().equals(appointment.getDoctor().getIdUser())
+                || hasAuthority(auth, "PATIENT") && appointment.getUser() != null
+                && actor.getIdUser().equals(appointment.getUser().getIdUser());
+        if (!allowed) throw new org.springframework.security.access.AccessDeniedException("Доступ запрещён");
+    }
+
+    private void requireAssignedDoctor(org.springframework.security.core.Authentication auth) {
+        if (!hasAuthority(auth, "DOCTOR") || hasAuthority(auth, "ADMIN")) {
+            throw new org.springframework.security.access.AccessDeniedException("Доступно только лечащему врачу");
+        }
+    }
+
+    private static boolean hasAuthority(org.springframework.security.core.Authentication auth, String authority) {
+        return auth != null && auth.getAuthorities().stream().anyMatch(a -> authority.equals(a.getAuthority()));
     }
 
     private static DepartmentDto toDto(Department value) {

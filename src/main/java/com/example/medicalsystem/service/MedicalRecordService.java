@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,6 +20,9 @@ public class MedicalRecordService {
     private final MedicalRecordRepository repository;
     private final AppointmentRepository appointmentRepository;
 
+    @Value("${app.demo-data.enabled:false}")
+    private boolean demoDataEnabled;
+
     public MedicalRecordService(MedicalRecordRepository repository,
                                 AppointmentRepository appointmentRepository) {
         this.repository = repository;
@@ -27,6 +31,9 @@ public class MedicalRecordService {
 
     @PostConstruct
     public void init() {
+        if (!demoDataEnabled) {
+            return;
+        }
         long count = repository.count();
         for (int i = (int) count + 1; i <= 10; i++) {
             MedicalRecord record = new MedicalRecord();

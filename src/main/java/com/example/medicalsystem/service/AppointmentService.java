@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +22,9 @@ public class AppointmentService {
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
 
+    @Value("${app.demo-data.enabled:false}")
+    private boolean demoDataEnabled;
+
     public AppointmentService(AppointmentRepository repository,
                               UserRepository userRepository,
                               DepartmentRepository departmentRepository) {
@@ -31,6 +35,9 @@ public class AppointmentService {
 
     @PostConstruct
     public void init() {
+        if (!demoDataEnabled) {
+            return;
+        }
         long count = repository.count();
         for (int i = (int) count + 1; i <= 10; i++) {
             Appointment appointment = new Appointment();
@@ -59,11 +66,27 @@ public class AppointmentService {
         return repository.save(appointment);
     }
 
+    public Appointment cancel(Integer appointmentId) {
+        Appointment appointment = repository.findById(appointmentId).orElse(null);
+        if (appointment == null) {
+            return null;
+        }
+        if ("Завершен".equalsIgnoreCase(appointment.getStatus())
+                || "Завершён".equalsIgnoreCase(appointment.getStatus())) {
+            throw new IllegalStateException("Завершённый приём нельзя отменить");
+        }
+        appointment.setStatus("Отменен");
+        return repository.save(appointment);
+    }
+
     public boolean isDoctorAvailable(Integer doctorId, LocalDateTime appointmentDate, Integer excludeAppointmentId) {
         if (doctorId == null || appointmentDate == null) return true;
-        return repository.findByDoctor_IdUserAndAppointmentDate(doctorId, appointmentDate).stream()
-                .noneMatch(existing -> !existing.getIdAppointment().equals(excludeAppointmentId)
-                        && !"Отменен".equalsIgnoreCase(existing.getStatus()));
+        return repository.findByDoctor_IdUser(doctorId).stream()
+                .filter(existing -> !java.util.Objects.equals(existing.getIdAppointment(), excludeAppointmentId))
+                .filter(existing -> existing.getAppointmentDate() != null)
+                .filter(existing -> !"Отменен".equalsIgnoreCase(existing.getStatus())
+                        && !"Отменён".equalsIgnoreCase(existing.getStatus()))
+                .noneMatch(existing -> appointmentDate.equals(existing.getAppointmentDate()));
     }
 
     public void deleteById(Integer id) {
@@ -191,6 +214,13 @@ public class AppointmentService {
 
     public List<Appointment> findByDateRange(LocalDateTime start, LocalDateTime end) {
         return repository.findByAppointmentDateBetween(start, end);
+    }
+
+    public List<Appointment> findUpcomingScheduled(LocalDateTime from) {
+        return repository.findByAppointmentDateAfter(from).stream()
+                .filter(appointment -> "Запланирован".equalsIgnoreCase(appointment.getStatus()))
+                .sorted(java.util.Comparator.comparing(Appointment::getAppointmentDate))
+                .toList();
     }
 
     private Optional<Integer> parseId(String value) {

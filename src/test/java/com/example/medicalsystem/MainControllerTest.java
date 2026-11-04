@@ -21,11 +21,22 @@ import static org.mockito.Mockito.when;
 class MainControllerTest {
 
     @Test
-    void adminHomeOpensAppointments() {
-        MainController controller = new MainController(mock(AppointmentService.class), mock(UserService.class));
+    void adminHomeUsesSeparateDashboardWithClinicStats() {
+        AppointmentService appointments = mock(AppointmentService.class);
+        UserService users = mock(UserService.class);
+        when(appointments.findByDateRange(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(List.of());
+        when(appointments.findUpcomingScheduled(org.mockito.ArgumentMatchers.any())).thenReturn(List.of());
+        when(users.findAll()).thenReturn(List.of());
+        MainController controller = new MainController(appointments, users);
         User admin = new User("admin", "password", List.of(new SimpleGrantedAuthority("ADMIN")));
+        ExtendedModelMap model = new ExtendedModelMap();
 
-        assertEquals("redirect:/appointments", controller.index(new ExtendedModelMap(), admin));
+        assertEquals("admin_dashboard", controller.index(model, admin));
+        assertEquals(0L, model.get("patientCount"));
+        assertEquals(0L, model.get("doctorCount"));
+        assertEquals(0, model.get("appointmentsToday"));
+        assertEquals(List.of(), model.get("upcomingAppointments"));
     }
 
     @Test

@@ -1,6 +1,8 @@
 package com.example.medicalsystem.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -46,7 +48,6 @@ public class Appointment {
     @JoinColumn(name = "id_doctor")
     private User doctor;
 
-    @NotNull(message = "Отделение обязательно")
     @ManyToOne
     @JoinColumn(name = "id_department")
     private Department department;
@@ -59,6 +60,10 @@ public class Appointment {
             joinColumns = @JoinColumn(name = "id_appointment"),
             inverseJoinColumns = @JoinColumn(name = "id_service"))
     private List<MedicalServiceEntity> services = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @jakarta.persistence.Column(name = "appointment_type", nullable = false, length = 20)
+    private AppointmentType type = AppointmentType.DOCTOR_VISIT;
 
     public Appointment() {
     }
@@ -91,4 +96,6 @@ public class Appointment {
     public void setMedicalRecords(List<MedicalRecord> medicalRecords) { this.medicalRecords = medicalRecords; }
     public List<MedicalServiceEntity> getServices() { return services; }
     public void setServices(List<MedicalServiceEntity> services) { this.services = services; }
+    public AppointmentType getType() { return type; }
+    public void setType(AppointmentType type) { this.type = type; }
 }

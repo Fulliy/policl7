@@ -1,6 +1,7 @@
 package com.example.medicalsystem.controller;
 
 import com.example.medicalsystem.model.Appointment;
+import com.example.medicalsystem.model.AppointmentType;
 import com.example.medicalsystem.service.AppointmentService;
 import com.example.medicalsystem.service.UserService;
 import com.example.medicalsystem.service.DepartmentService;
@@ -80,18 +81,27 @@ public class AppointmentController {
     }
 
     @GetMapping("/new")
-    public String showCreateForm(Model model, @AuthenticationPrincipal UserDetails principal) {
+    public String showCreateForm(@RequestParam(required = false) Integer doctorId,
+                                 @RequestParam(required = false) Integer specialtyId,
+                                 Model model, @AuthenticationPrincipal UserDetails principal) {
         Appointment appointment = new Appointment();
+        appointment.setType(AppointmentType.DOCTOR_VISIT);
+        com.example.medicalsystem.model.User selectedDoctor = doctorId == null ? null : userService.findById(doctorId);
+        if (selectedDoctor != null && selectedDoctor.getRoles() != null
+                && selectedDoctor.getRoles().contains(RoleEnum.DOCTOR)) {
+            appointment.setDoctor(selectedDoctor);
+        }
         if (isPatientOnly(principal)) {
             appointment.setStatus("Запланирован");
         }
         model.addAttribute("appointment", appointment);
         com.example.medicalsystem.model.User currentUser = userService.findByUsername(principal.getUsername());
         model.addAttribute("users", isPatientOnly(principal) ? java.util.List.of(currentUser) : userService.findAll());
-        model.addAttribute("doctors", findDoctors());
+        model.addAttribute("doctors", findDoctors(specialtyId));
         model.addAttribute("departments", departmentService.findAll());
         model.addAttribute("services", serviceEntityService.findAll());
         model.addAttribute("isPatientOnly", isPatientOnly(principal));
+        model.addAttribute("selectedSpecialtyId", specialtyId);
         return "appointmentForm";
     }
 
@@ -107,18 +117,12 @@ public class AppointmentController {
             appointment.setUser(userService.findByUsername(principal.getUsername()));
             appointment.setStatus("Запланирован");
         }
-        appointment.setServices(findServices(serviceIds));
-        assignDoctor(appointment, doctorId, result);
+        applyAppointmentType(appointment, serviceIds, doctorId, result);
         validateAppointment(appointment, result);
         validateDoctorAvailability(appointment, null, result);
         if (result.hasErrors()) {
             model.addAttribute("appointment", appointment);
-            com.example.medicalsystem.model.User currentUser = userService.findByUsername(principal.getUsername());
-            model.addAttribute("users", isPatientOnly(principal) ? java.util.List.of(currentUser) : userService.findAll());
-            model.addAttribute("doctors", findDoctors());
-            model.addAttribute("departments", departmentService.findAll());
-            model.addAttribute("services", serviceEntityService.findAll());
-            model.addAttribute("isPatientOnly", isPatientOnly(principal));
+            addFormOptions(model, principal);
             return "appointmentForm";
         }
         appointmentService.save(appointment);
@@ -131,12 +135,7 @@ public class AppointmentController {
         Appointment appointment = appointmentService.findById(id);
         ensureOwnerOrStaff(appointment, principal);
         model.addAttribute("appointment", appointment);
-        com.example.medicalsystem.model.User currentUser = userService.findByUsername(principal.getUsername());
-        model.addAttribute("users", isPatientOnly(principal) ? java.util.List.of(currentUser) : userService.findAll());
-        model.addAttribute("doctors", findDoctors());
-        model.addAttribute("departments", departmentService.findAll());
-        model.addAttribute("services", serviceEntityService.findAll());
-        model.addAttribute("isPatientOnly", isPatientOnly(principal));
+        addFormOptions(model, principal);
         return "appointmentForm";
     }
 
@@ -154,19 +153,13 @@ public class AppointmentController {
             appointment.setUser(existing.getUser());
             appointment.setStatus(existing.getStatus());
         }
-        appointment.setServices(findServices(serviceIds));
-        assignDoctor(appointment, doctorId, result);
+        applyAppointmentType(appointment, serviceIds, doctorId, result);
         validateAppointment(appointment, result);
         validateDoctorAvailability(appointment, id, result);
         if (result.hasErrors()) {
             appointment.setIdAppointment(id);
             model.addAttribute("appointment", appointment);
-            com.example.medicalsystem.model.User currentUser = userService.findByUsername(principal.getUsername());
-            model.addAttribute("users", isPatientOnly(principal) ? java.util.List.of(currentUser) : userService.findAll());
-            model.addAttribute("doctors", findDoctors());
-            model.addAttribute("departments", departmentService.findAll());
-            model.addAttribute("services", serviceEntityService.findAll());
-            model.addAttribute("isPatientOnly", isPatientOnly(principal));
+            addFormOptions(model, principal);
             return "appointmentForm";
         }
         appointment.setIdAppointment(id);
@@ -178,6 +171,17 @@ public class AppointmentController {
     public String delete(@PathVariable Integer id, @AuthenticationPrincipal UserDetails principal) {
         ensureOwnerOrStaff(appointmentService.findById(id), principal);
         appointmentService.deleteById(id);
+        return "redirect:/appointments";
+    }
+
+    @PostMapping("/{id}/cancel")
+    public String cancel(@PathVariable Integer id, @AuthenticationPrincipal UserDetails principal) {
+        ensureOwnerOrStaff(appointmentService.findById(id), principal);
+        try {
+            appointmentService.cancel(id);
+        } catch (IllegalStateException ex) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, ex.getMessage());
+        }
         return "redirect:/appointments";
     }
 
@@ -193,11 +197,15 @@ public class AppointmentController {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.NOT_FOUND, "Запись не найдена");
         }
-        if (isPatientOnly(principal)) {
-            com.example.medicalsystem.model.User currentUser = userService.findByUsername(principal.getUsername());
-            if (appointment.getUser() == null || !currentUser.getIdUser().equals(appointment.getUser().getIdUser())) {
-                throw new AccessDeniedException("Можно работать только со своими записями");
-            }
+        com.example.medicalsystem.model.User currentUser = userService.findByUsername(principal.getUsername());
+        boolean admin = principal.getAuthorities().stream().anyMatch(a -> "ADMIN".equals(a.getAuthority()));
+        boolean doctor = principal.getAuthorities().stream().anyMatch(a -> "DOCTOR".equals(a.getAuthority()));
+        boolean patient = principal.getAuthorities().stream().anyMatch(a -> "PATIENT".equals(a.getAuthority()));
+        boolean allowed = admin
+                || (doctor && appointment.getDoctor() != null && currentUser.getIdUser().equals(appointment.getDoctor().getIdUser()))
+                || (patient && appointment.getUser() != null && currentUser.getIdUser().equals(appointment.getUser().getIdUser()));
+        if (!allowed) {
+            throw new AccessDeniedException("Недостаточно прав для этой записи");
         }
     }
 
@@ -218,6 +226,13 @@ public class AppointmentController {
                 .toList();
     }
 
+    private java.util.List<com.example.medicalsystem.model.User> findDoctors(Integer specialtyId) {
+        java.util.List<com.example.medicalsystem.model.User> doctors = findDoctors();
+        if (specialtyId == null) return doctors;
+        return doctors.stream().filter(doctor -> doctor.getSpecialty() != null
+                && specialtyId.equals(doctor.getSpecialty().getIdSpecialty())).toList();
+    }
+
     private void validateDoctorAvailability(Appointment appointment, Integer excludeId, BindingResult result) {
         if (appointment.getDoctor() != null && appointment.getAppointmentDate() != null
                 && !appointmentService.isDoctorAvailable(appointment.getDoctor().getIdUser(),
@@ -233,6 +248,46 @@ public class AppointmentController {
             return;
         }
         appointment.setDoctor(doctor);
+    }
+
+    private void applyAppointmentType(Appointment appointment, java.util.List<Integer> serviceIds,
+                                      Integer doctorId, BindingResult result) {
+        AppointmentType type = appointment.getType() == null ? AppointmentType.DOCTOR_VISIT : appointment.getType();
+        appointment.setType(type);
+        java.util.List<MedicalServiceEntity> selected = findServices(serviceIds);
+        long requestedCount = serviceIds == null ? 0 : serviceIds.stream().filter(java.util.Objects::nonNull).distinct().count();
+        if (selected.size() != requestedCount) {
+            result.reject("appointment.service.invalid", "Одна или несколько выбранных услуг не найдены.");
+        }
+        if (type == AppointmentType.DOCTOR_VISIT) {
+            if (!selected.isEmpty()) result.reject("appointment.doctor.services", "Для приёма врача нельзя выбирать услуги.");
+            appointment.setServices(java.util.List.of());
+            assignDoctor(appointment, doctorId, result);
+            if (appointment.getDepartment() == null) {
+                result.rejectValue("department", "appointment.department.required", "Выберите отделение.");
+            } else if (appointment.getDoctor() != null && (appointment.getDoctor().getDepartment() == null
+                    || !appointment.getDepartment().getIdDepartment().equals(
+                    appointment.getDoctor().getDepartment().getIdDepartment()))) {
+                result.rejectValue("doctor", "appointment.doctor.department", "Выбранный врач не относится к этому отделению.");
+            }
+        } else {
+            if (doctorId != null || appointment.getDepartment() != null) {
+                result.reject("appointment.service.fields", "Для записи на услуги нельзя указывать врача или отделение.");
+            }
+            appointment.setDoctor(null);
+            appointment.setDepartment(null);
+            appointment.setServices(selected);
+            if (selected.isEmpty()) result.reject("appointment.service.required", "Выберите хотя бы одну услугу.");
+        }
+    }
+
+    private void addFormOptions(Model model, UserDetails principal) {
+        com.example.medicalsystem.model.User currentUser = userService.findByUsername(principal.getUsername());
+        model.addAttribute("users", isPatientOnly(principal) ? java.util.List.of(currentUser) : userService.findAll());
+        model.addAttribute("doctors", findDoctors());
+        model.addAttribute("departments", departmentService.findAll());
+        model.addAttribute("services", serviceEntityService.findAll());
+        model.addAttribute("isPatientOnly", isPatientOnly(principal));
     }
 
     private void addPagination(Model model, Page<?> page) {

@@ -19,6 +19,13 @@
         .btn { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; text-align: center; text-decoration: none; border: none; }
         .btn-save { background: #3b82f6; color: white; }
         .btn-cancel { background: #9ca3af; color: white; }
+        .type-switch { display:flex; gap:4px; padding:4px; margin-bottom:22px; border-radius:12px; background:#e8f7f4; }
+        .type-switch button { flex:1; border:0; border-radius:9px; padding:11px 8px; color:#08716d; background:transparent; cursor:pointer; font-weight:600; }
+        .type-switch button.active { color:white; background:#0e8f89; box-shadow:0 3px 10px #0e8f8933; }
+        .service-list { display:grid; gap:8px; }
+        .service-option { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid #dcece9; border-radius:10px; }
+        .service-option input { width:auto; accent-color:#0e8f89; }
+        .total { margin-top:14px; text-align:right; font-weight:700; color:#08716d; }
 </style>
     <link rel="stylesheet" href="/app.css">
 </head>
@@ -28,6 +35,12 @@
         <h2 th:text="${appointment.idAppointment != null} ? 'Редактирование записи' : 'Новая запись на прием'"></h2>
         <form th:action="${appointment.idAppointment != null} ? '/appointments/update' : '/appointments/save'" th:object="${appointment}" method="post">
             <input type="hidden" name="id" th:value="${appointment.idAppointment}" th:if="${appointment.idAppointment != null}">
+            <input type="hidden" th:field="*{type}" id="appointmentType">
+            <div class="type-switch" role="tablist" aria-label="Тип записи">
+                <button type="button" data-type="DOCTOR_VISIT" role="tab">Приём врача</button>
+                <button type="button" data-type="SERVICE" role="tab">Услуги</button>
+            </div>
+            <div class="error" th:if="${#fields.hasGlobalErrors()}" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></div>
 
             <div class="form-group">
                 <label>Дата и время приема</label>
@@ -49,7 +62,7 @@
             <input th:if="${isPatientOnly}" type="hidden" th:field="*{status}">
 
             <div class="form-group">
-                <label>Жалоба пациента</label>
+                <label id="commentLabel">Жалоба пациента</label>
                 <textarea th:field="*{complaint}" rows="3"></textarea>
                 <div class="error" th:if="${#fields.hasErrors('complaint')}" th:errors="*{complaint}"></div>
             </div>
@@ -65,7 +78,7 @@
                 <div class="error" th:if="${#fields.hasErrors('user')}" th:errors="*{user}"></div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group doctor-fields">
                 <label>Отделение</label>
                 <select th:field="*{department}">
                     <option value="">Выберите отделение</option>
@@ -74,29 +87,30 @@
                 <div class="error" th:if="${#fields.hasErrors('department')}" th:errors="*{department}"></div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group doctor-fields">
                 <label>Доктор</label>
                 <select name="doctorId">
                     <option value="">Выберите доктора</option>
                     <option th:each="doctor : ${doctors}" th:value="${doctor.idUser}"
+                            th:attr="data-department-id=${doctor.department != null ? doctor.department.idDepartment : ''}"
                             th:text="${doctor.surname + ' ' + doctor.firstName}"
                             th:selected="${appointment.doctor != null and appointment.doctor.idUser == doctor.idUser}"></option>
                 </select>
                 <div class="error" th:if="${#fields.hasErrors('doctor')}" th:errors="*{doctor}"></div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group service-fields">
                 <label>Выберите услуги</label>
-                <div th:each="service : ${services}">
-                    <label style="display:flex; align-items:center; gap:8px; font-weight:400;">
+                <div class="service-list">
+                  <label class="service-option" th:each="service : ${services}">
                         <input type="checkbox" name="serviceIds" th:value="${service.idService}"
                                th:checked="${appointment.services != null and #lists.contains(appointment.services.![idService], service.idService)}"
-                               style="width:auto;">
+                               th:attr="data-cost=${service.cost}">
                         <span th:text="${service.serviceName + ' — ' + service.cost + ' ₽'}"></span>
-                    </label>
+                  </label>
                 </div>
+                <p class="total">Итого: <span id="serviceTotal">0</span> ₽</p>
             </div>
-
             <div class="btn-group">
                 <button type="submit" class="btn btn-save">Сохранить</button>
                 <a th:href="@{/appointments}" class="btn btn-cancel">Отмена</a>
@@ -104,5 +118,39 @@
         </form>
     </div>
 </div>
+<script>
+(() => {
+  const typeInput = document.getElementById('appointmentType');
+  const tabs = [...document.querySelectorAll('[data-type]')];
+  const doctorFields = [...document.querySelectorAll('.doctor-fields')];
+  const serviceFields = [...document.querySelectorAll('.service-fields')];
+  const department = document.getElementById('department');
+  const doctor = document.querySelector('[name="doctorId"]');
+  const total = document.getElementById('serviceTotal');
+  const serviceChecks = [...document.querySelectorAll('[name="serviceIds"]')];
+  const commentLabel = document.getElementById('commentLabel');
+  const refreshTotal = () => total.textContent = serviceChecks.filter(x => x.checked).reduce((sum, x) => sum + Number(x.dataset.cost || 0), 0).toLocaleString('ru-RU');
+  const refreshDoctors = () => {
+    if (!department || !doctor) return;
+    [...doctor.options].forEach(option => {
+      const match = !option.value || !department.value || option.dataset.departmentId === department.value;
+      option.hidden = !match;
+      if (!match && option.selected) doctor.value = '';
+    });
+  };
+  const setType = value => {
+    typeInput.value = value;
+    const services = value === 'SERVICE';
+    commentLabel.textContent = services ? 'Комментарий (необязательно)' : 'Жалоба пациента';
+    tabs.forEach(tab => { tab.classList.toggle('active', tab.dataset.type === value); tab.setAttribute('aria-selected', tab.dataset.type === value); });
+    doctorFields.forEach(group => { group.hidden = services; group.querySelectorAll('select,input,textarea').forEach(control => { control.disabled = services; if (services) control.value = ''; }); });
+    serviceFields.forEach(group => { group.hidden = !services; group.querySelectorAll('input,select,textarea').forEach(control => control.disabled = !services); });
+  };
+  tabs.forEach(tab => tab.addEventListener('click', () => setType(tab.dataset.type)));
+  department?.addEventListener('change', refreshDoctors);
+  serviceChecks.forEach(check => check.addEventListener('change', refreshTotal));
+  setType(typeInput.value || 'DOCTOR_VISIT'); refreshDoctors(); refreshTotal();
+})();
+</script>
 </body>
 </html>

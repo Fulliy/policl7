@@ -6,6 +6,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,12 +17,18 @@ public class DepartmentService {
 
     private final DepartmentRepository repository;
 
+    @Value("${app.demo-data.enabled:false}")
+    private boolean demoDataEnabled;
+
     public DepartmentService(DepartmentRepository repository) {
         this.repository = repository;
     }
 
     @PostConstruct
     public void init() {
+        if (!demoDataEnabled) {
+            return;
+        }
         long count = repository.count();
         for (int i = (int) count + 1; i <= 10; i++) {
             Department department = new Department();
