@@ -136,7 +136,7 @@ public class SystemApiService {
         Appointment appointment = new Appointment();
         appointment.setType(type);
         appointment.setAppointmentDate(request.appointmentDate());
-        appointment.setStatus(isPatientOnly(principal) ? "Запланирован" : request.status());
+        appointment.setStatus(isPatientOnly(principal) ? "pending" : request.status());
         appointment.setComplaint(request.complaint());
         appointment.setUser(isPatientOnly(principal)
                 ? currentUser(principal)
@@ -146,7 +146,7 @@ public class SystemApiService {
                 ? require(departmentService.findById(request.departmentId())) : null);
         appointment.setDoctor(type == AppointmentType.DOCTOR_VISIT
                 ? require(userService.findById(effectiveDoctorId(request, principal))) : null);
-        return toAppointmentDto(appointmentService.save(appointment));
+        return toAppointmentDto(appointmentService.saveBooking(appointment));
     }
 
     @PutMapping("/appointments/{id}")
@@ -173,7 +173,7 @@ public class SystemApiService {
             appointment.setStatus(request.status());
             appointment.setUser(require(userService.findById(request.userId())));
         }
-        return toAppointmentDto(appointmentService.save(appointment));
+        return toAppointmentDto(appointmentService.saveBooking(appointment));
     }
 
     @DeleteMapping("/appointments/{id}")

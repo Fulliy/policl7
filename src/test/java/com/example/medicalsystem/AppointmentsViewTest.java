@@ -124,6 +124,16 @@ class AppointmentsViewTest {
                 .andExpect(content().string(containsString("По заданным условиям записей нет")));
     }
 
+    @Test
+    void patientBookingFormRendersSlotCalendarAndSeparateServiceMode() throws Exception {
+        mvc.perform(get("/appointments/new").principal(principal("PATIENT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Приём врача")))
+                .andExpect(content().string(containsString("Услуги")))
+                .andExpect(content().string(containsString("calendarGrid")))
+                .andExpect(content().string(containsString("serviceTotal")));
+    }
+
     private UsernamePasswordAuthenticationToken principal(String role) {
         var user = new org.springframework.security.core.userdetails.User("test@example.com", "unused",
                 List.of(new SimpleGrantedAuthority(role)));

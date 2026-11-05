@@ -24,6 +24,8 @@ public class Appointment {
     @Enumerated(EnumType.STRING)
     @Column(name = "appointment_type", nullable = false, length = 20)
     private AppointmentType type = AppointmentType.DOCTOR_VISIT;
+    @Column(name = "duration_minutes", nullable = false)
+    private Integer durationMinutes = 30;
     public Appointment() { }
     public Integer getIdAppointment() { return idAppointment; }
     public LocalDateTime getAppointmentDate() { return appointmentDate; }
@@ -40,4 +42,6 @@ public class Appointment {
     public void setDepartmentId(Integer value) { departmentId = value; }
     public AppointmentType getType() { return type; }
     public void setType(AppointmentType value) { type = value; }
+    public Integer getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(Integer value) { durationMinutes = value; }
 }

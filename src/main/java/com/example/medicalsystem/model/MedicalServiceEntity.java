@@ -31,6 +31,16 @@ public class MedicalServiceEntity {
     @Max(value = 1000000, message = "Стоимость не может превышать 1 000 000")
     private Integer cost;
 
+    @NotNull
+    @Min(value = 5, message = "Длительность услуги должна быть не менее 5 минут")
+    @Max(value = 480, message = "Длительность услуги не может превышать 8 часов")
+    @jakarta.persistence.Column(name = "duration_minutes", nullable = false)
+    private Integer durationMinutes = 30;
+
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @jakarta.persistence.Column(name = "service_type", nullable = false, length = 20)
+    private ServiceType serviceType = ServiceType.PRIMARY;
+
     @Size(max = 500, message = "Описание должно быть не длиннее 500 символов")
     private String description;
 
@@ -52,8 +62,14 @@ public class MedicalServiceEntity {
     public void setServiceName(String serviceName) { this.serviceName = serviceName; }
     public Integer getCost() { return cost; }
     public void setCost(Integer cost) { this.cost = cost; }
+    public Integer getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
+    public ServiceType getServiceType() { return serviceType; }
+    public void setServiceType(ServiceType serviceType) { this.serviceType = serviceType; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     public List<Prescription> getPrescriptions() { return prescriptions; }
     public void setPrescriptions(List<Prescription> prescriptions) { this.prescriptions = prescriptions; }
+
+    public enum ServiceType { PRIMARY, REPEAT, PROCEDURE }
 }

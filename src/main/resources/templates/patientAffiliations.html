@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('Прикрепления', 'affiliations', ~{::content})}">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body>
+<main th:fragment="content" class="space-y-6">
+    <header>
+        <p class="text-sm font-semibold text-clinic-600">Личный кабинет</p>
+        <h1 class="mt-1 text-3xl font-bold tracking-tight text-ink">Прикрепления</h1>
+        <p class="mt-2 text-sm text-slate-500">Медицинские центры и врачи, к которым вы прикреплены.</p>
+    </header>
+
+    <section th:if="${affiliations == null or affiliations.isEmpty()}"
+             class="rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center shadow-card sm:px-10"
+             aria-labelledby="affiliations-empty-title">
+        <span class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-clinic-50 text-2xl text-clinic-600" aria-hidden="true">⌖</span>
+        <h2 id="affiliations-empty-title" class="mt-5 text-xl font-bold text-ink">Прикреплений пока нет</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">Информация о прикреплении к врачу или медцентру появится здесь после оформления.</p>
+        <a th:href="@{/appointments/new}" class="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-clinic-500 px-5 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-clinic-600">Записаться на приём <span aria-hidden="true">→</span></a>
+    </section>
+
+    <section th:unless="${affiliations == null or affiliations.isEmpty()}" class="space-y-4" aria-label="Список прикреплений">
+        <article th:each="affiliation : ${affiliations}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <h2 class="text-lg font-bold text-ink" th:text="${affiliation.medicalCenterName}">Медицинский центр</h2>
+                <span class="rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700"
+                      th:text="${affiliation.status == null ? 'Статус уточняется' : (affiliation.status.name() == 'ACTIVE' ? 'Активно' : 'Завершено')}">Активно</span>
+            </div>
+            <div class="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                <p class="text-slate-500">Врач: <span class="font-medium text-slate-700" th:text="${affiliation.doctorName}">Врач</span></p>
+                <p class="text-slate-500">Дата прикрепления: <time class="font-medium text-slate-700" th:text="${#temporals.format(affiliation.attachedAt, 'dd.MM.yyyy')}">05.11.2026</time></p>
+            </div>
+        </article>
+    </section>
+</main>
+</body>
+</html>

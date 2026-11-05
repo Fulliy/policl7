@@ -72,7 +72,8 @@ public class MainController {
             model.addAttribute("today", today);
             model.addAttribute("appointmentsToday", todaysAppointments.size());
             model.addAttribute("todayAppointments", todaysAppointments.stream()
-                    .filter(appointment -> "Запланирован".equalsIgnoreCase(appointment.getStatus()))
+                    .filter(appointment -> "pending".equalsIgnoreCase(appointment.getStatus())
+                            || "confirmed".equalsIgnoreCase(appointment.getStatus()))
                     .sorted(Comparator.comparing(Appointment::getAppointmentDate))
                     .toList());
             model.addAttribute("patientCount", users.stream()
@@ -116,7 +117,8 @@ public class MainController {
             var nextAppointment = patientAppointments.stream()
                     .filter(appointment -> appointment.getAppointmentDate() != null
                             && !appointment.getAppointmentDate().isBefore(now)
-                            && "Запланирован".equalsIgnoreCase(appointment.getStatus()))
+                            && ("pending".equalsIgnoreCase(appointment.getStatus())
+                            || "confirmed".equalsIgnoreCase(appointment.getStatus())))
                     .findFirst().orElse(null);
             var allUsers = userService.findAll();
             var doctors = allUsers.stream()

@@ -34,3 +34,15 @@ management:
 logging:
   level:
     root: INFO
+
+app:
+  scheduling:
+    min-notice-minutes: 60
+    max-advance-days: 30
+    max-active-per-doctor: 3
+    max-active-total: 5
+    cancellation-deadline-hours: 2
+    no-show-lookback-days: 90
+    no-show-limit: 3
+    default-visit-duration-minutes: 30
+    nearest-date-search-days: 90

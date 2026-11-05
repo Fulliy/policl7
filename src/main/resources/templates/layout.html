@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f5faf9">
     <title th:text="${title + ' · Забота'}">Медцентр «Забота»</title>
+    <link rel="stylesheet" th:href="@{/app.css}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {theme:{extend:{
@@ -33,9 +34,9 @@
             <a th:href="@{/appointments}" th:classappend="${activePage == 'appointments' ? ' bg-clinic-50 font-semibold text-clinic-700' : ' text-slate-600 hover:bg-slate-50'}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg>Записи на приём
             </a>
-            <button type="button" data-coming-soon class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-slate-500 transition hover:bg-clinic-50"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6m-6 4h6m-6 4h4"/></svg>Медкарта<span class="ml-auto text-[10px] text-slate-400">Скоро</span></button>
-            <button type="button" data-coming-soon class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-slate-500 transition hover:bg-clinic-50"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 4h16v16H4zM8 8h8m-8 4h8m-8 4h4"/></svg>Направления<span class="ml-auto text-[10px] text-slate-400">Скоро</span></button>
-            <button type="button" data-coming-soon class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm text-slate-500 transition hover:bg-clinic-50"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Прикрепления<span class="ml-auto text-[10px] text-slate-400">Скоро</span></button>
+            <a th:href="@{/medical-card}" th:classappend="${activePage == 'medical-card' ? ' bg-clinic-50 font-semibold text-clinic-700' : ' text-slate-600 hover:bg-slate-50'}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6m-6 4h6m-6 4h4"/></svg>Медкарта</a>
+            <a th:href="@{/patient/referrals}" th:classappend="${activePage == 'referrals' ? ' bg-clinic-50 font-semibold text-clinic-700' : ' text-slate-600 hover:bg-slate-50'}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 4h16v16H4zM8 8h8m-8 4h8m-8 4h4"/></svg>Направления</a>
+            <a th:href="@{/patient/affiliations}" th:classappend="${activePage == 'affiliations' ? ' bg-clinic-50 font-semibold text-clinic-700' : ' text-slate-600 hover:bg-slate-50'}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Прикрепления</a>
         </nav>
 
         <nav th:if="${role == 'DOCTOR'}" class="flex-1 space-y-1 overflow-y-auto p-4" aria-label="Меню врача">
@@ -70,7 +71,7 @@
             <span class="text-xs font-medium text-clinic-700 sm:hidden">Забота · МЕДЦЕНТР</span>
             <form class="sm:hidden" th:action="@{/logout}" method="post"><button class="rounded-lg px-3 py-2 text-xs font-medium text-slate-500 hover:bg-clinic-50" type="submit">Выйти</button></form>
         </header>
-        <main class="mx-auto w-full max-w-6xl px-4 py-7 sm:px-6 sm:py-9 lg:px-10" th:replace="${content}"><!-- Контент страницы --></main>
+        <main class="portal-content mx-auto w-full max-w-5xl px-4 py-7 sm:px-6 sm:py-9 lg:px-8" th:replace="${content}"><!-- Контент страницы --></main>
     </div>
 </div>
 <div id="coming-soon-message" role="status" aria-live="polite" class="pointer-events-none fixed bottom-5 left-1/2 z-[60] hidden -translate-x-1/2 rounded-xl bg-ink px-5 py-3 text-sm text-white shadow-card">Раздел находится в разработке</div>

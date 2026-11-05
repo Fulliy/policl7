@@ -5,27 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Форма записи на прием</title>
     <style>
+        :root {
+            --clinic-primary: #0e8f89;
+            --clinic-primary-dark: #08716d;
+            --clinic-primary-soft: #e8f7f4;
+            --clinic-text: #263746;
+            --clinic-muted: #82909b;
+            --clinic-border: #dce8e7;
+            --clinic-disabled: #f1f4f5;
+            --clinic-radius: 12px;
+            --clinic-card-radius: 16px;
+            --clinic-card-shadow: 0 4px 20px rgba(0,0,0,.06);
+            --clinic-transition: .18s ease;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #eef2ff; padding: 40px 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f8f8; padding: 32px 12px; }
         .container { max-width: 550px; margin: 0 auto; }
-        .card { background: white; border-radius: 12px; padding: 28px; border: 1px solid #dbeafe; }
-        h2 { color: #1e40af; margin-bottom: 24px; font-size: 20px; text-align: center; }
+        .card { background: white; border-radius: var(--clinic-card-radius); padding: 24px; border: 1px solid #e5eeee; box-shadow: var(--clinic-card-shadow); }
+        h2 { color: #112a3d; margin-bottom: 24px; font-size: 20px; text-align: center; }
         .form-group { margin-bottom: 18px; }
-        label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
-        input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; background: white; }
-        textarea { resize: vertical; min-height: 80px; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--clinic-text); }
+        input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #cfdcdd; border-radius: var(--clinic-radius); font-size: 14px; font-family: inherit; background: white; transition: border-color var(--clinic-transition), box-shadow var(--clinic-transition); }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--clinic-primary); box-shadow: 0 0 0 3px rgba(14,143,137,.13); }
+        textarea { resize: vertical; min-height: 90px; }
         .error { margin-top: 6px; color: #dc2626; font-size: 13px; }
         .btn-group { display: flex; gap: 12px; margin-top: 24px; }
         .btn { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; text-align: center; text-decoration: none; border: none; }
         .btn-save { background: #3b82f6; color: white; }
         .btn-cancel { background: #9ca3af; color: white; }
-        .type-switch { display:flex; gap:4px; padding:4px; margin-bottom:22px; border-radius:12px; background:#e8f7f4; }
-        .type-switch button { flex:1; border:0; border-radius:9px; padding:11px 8px; color:#08716d; background:transparent; cursor:pointer; font-weight:600; }
-        .type-switch button.active { color:white; background:#0e8f89; box-shadow:0 3px 10px #0e8f8933; }
+        .type-switch { display:flex; gap:4px; padding:4px; margin-bottom:22px; border-radius:12px; background:var(--clinic-primary-soft); }
+        .type-switch button { flex:1; border:0; border-radius:9px; padding:11px 8px; color:var(--clinic-primary-dark); background:transparent; cursor:pointer; font-weight:600; }
+        .type-switch button.active { color:white; background:var(--clinic-primary); box-shadow:0 3px 10px #0e8f8933; }
         .service-list { display:grid; gap:8px; }
-        .service-option { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid #dcece9; border-radius:10px; }
-        .service-option input { width:auto; accent-color:#0e8f89; }
-        .total { margin-top:14px; text-align:right; font-weight:700; color:#08716d; }
+        .service-option { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--clinic-border); border-radius:10px; }
+        .service-option input { width:auto; accent-color:var(--clinic-primary); }
+        .total { margin-top:14px; text-align:right; font-weight:700; color:var(--clinic-primary-dark); }
+        .booking-date-group { padding:20px; border:1px solid #e6eeee; border-radius:var(--clinic-card-radius); background:#fff; box-shadow:var(--clinic-card-shadow); }
+        .booking-date-group > label, #commentLabel { margin-bottom:12px; font-size:14px; font-weight:700; color:var(--clinic-text); }
+        #doctorCalendar { padding:18px; border:1px solid #edf2f2; border-radius:14px; background:#fbfdfd; }
+        #calendarHeader { display:grid; grid-template-columns:40px minmax(0,1fr) 40px; align-items:center; gap:12px; }
+        #monthLabel { color:#193747; text-align:center; text-transform:capitalize; font-size:18px; font-weight:700; letter-spacing:-.01em; }
+        .calendar-nav { display:grid; width:40px; height:40px; place-items:center; border:1px solid var(--clinic-border); border-radius:50%; background:#fff; color:var(--clinic-primary-dark); font-size:24px; line-height:1; cursor:pointer; transition:background var(--clinic-transition), border-color var(--clinic-transition), transform var(--clinic-transition), box-shadow var(--clinic-transition); }
+        .calendar-nav:hover { transform:translateY(-1px); border-color:var(--clinic-primary); background:var(--clinic-primary-soft); box-shadow:0 3px 10px rgba(14,143,137,.1); }
+        #calendarGrid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:7px; margin-top:14px; }
+        .calendar-weekday { display:grid; min-height:24px; place-items:center; color:var(--clinic-muted); font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+        .calendar-weekday.weekend { color:#9baab1; }
+        .calendar-spacer { min-width:0; }
+        .calendar-day { display:grid; width:100%; min-width:38px; max-width:44px; aspect-ratio:1; place-items:center; justify-self:center; border:1px solid #e1e9e9; border-radius:11px; background:#fff; color:var(--clinic-text); font-size:14px; font-weight:600; cursor:pointer; transition:color var(--clinic-transition), background var(--clinic-transition), border-color var(--clinic-transition), box-shadow var(--clinic-transition), transform var(--clinic-transition); }
+        .calendar-day:hover:not(:disabled) { transform:translateY(-1px); border-color:var(--clinic-primary); background:var(--clinic-primary-soft); color:var(--clinic-primary-dark); }
+        .calendar-day.today { border-color:var(--clinic-primary); }
+        .calendar-day.weekend:not(:disabled) { color:#64747d; }
+        .calendar-day.selected { border-color:var(--clinic-primary); background:var(--clinic-primary); color:#fff; font-weight:700; box-shadow:0 4px 10px rgba(14,143,137,.22); }
+        .calendar-day:disabled { border-color:#edf0f1; background:var(--clinic-disabled); color:#aeb8bd; cursor:not-allowed; }
+        #calendarMessage { margin:18px 0 10px; color:#465963; font-size:14px; font-weight:600; }
+        #nearestDateButton { padding:0; border:0; background:none; color:var(--clinic-primary-dark); font-size:13px; font-weight:700; text-align:left; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+        #timeSlots { display:grid; grid-template-columns:repeat(auto-fill,minmax(88px,1fr)); gap:9px; margin-top:12px; }
+        .time-slot { min-height:42px; padding:10px 6px; border:1px solid #dce7e7; border-radius:10px; background:#fff; color:var(--clinic-text); font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; text-align:center; cursor:pointer; transition:color var(--clinic-transition), background var(--clinic-transition), border-color var(--clinic-transition), box-shadow var(--clinic-transition), transform var(--clinic-transition); }
+        .time-slot:hover:not(:disabled):not(.selected) { transform:translateY(-1px); border-color:var(--clinic-primary); color:var(--clinic-primary-dark); background:#f5fbfa; }
+        .time-slot.selected { border-color:var(--clinic-primary); background:var(--clinic-primary); color:#fff; box-shadow:0 3px 9px rgba(14,143,137,.18); }
+        .time-slot:disabled { border-color:#edf0f1; background:var(--clinic-disabled); color:#aeb8bd; text-decoration:line-through; cursor:not-allowed; }
+        .calendar-day:focus-visible, .time-slot:focus-visible, .calendar-nav:focus-visible, #nearestDateButton:focus-visible { outline:3px solid rgba(14,143,137,.28); outline-offset:2px; }
+        #serviceDateTime { padding:18px; border:1px solid #edf2f2; border-radius:14px; background:#fbfdfd; }
+        #commentLabel + textarea { border-radius:var(--clinic-radius); border-color:#cfdcdd; }
+        @media (max-width:480px) {
+            body { padding:20px 12px; }
+            .card { padding:18px 10px; }
+            .booking-date-group { padding:10px 8px; }
+            #doctorCalendar { padding:10px 0; border:0; background:transparent; }
+            #calendarGrid { gap:6px; margin-right:-2px; margin-left:-2px; }
+            .calendar-day { min-width:38px; }
+            #timeSlots { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+        }
 </style>
     <link rel="stylesheet" href="/app.css">
 </head>
@@ -33,7 +83,7 @@
 <div class="container">
     <div class="card">
         <h2 th:text="${appointment.idAppointment != null} ? 'Редактирование записи' : 'Новая запись на прием'"></h2>
-        <form th:action="${appointment.idAppointment != null} ? '/appointments/update' : '/appointments/save'" th:object="${appointment}" method="post">
+        <form th:action="${appointment.idAppointment != null} ? '/appointments/update' : '/appointments/save'" th:object="${appointment}" method="post" th:attr="data-patient-only=${isPatientOnly}">
             <input type="hidden" name="id" th:value="${appointment.idAppointment}" th:if="${appointment.idAppointment != null}">
             <input type="hidden" th:field="*{type}" id="appointmentType">
             <div class="type-switch" role="tablist" aria-label="Тип записи">
@@ -41,10 +91,22 @@
                 <button type="button" data-type="SERVICE" role="tab">Услуги</button>
             </div>
             <div class="error" th:if="${#fields.hasGlobalErrors()}" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></div>
+            <p id="bookingMessage" class="mt-3 text-sm" aria-live="polite"></p>
 
-            <div class="form-group">
+            <div class="form-group booking-date-group">
                 <label>Дата и время приема</label>
-                <input type="datetime-local" th:field="*{appointmentDate}">
+                <input type="hidden" th:field="*{appointmentDate}" id="appointmentDate">
+                <div id="doctorCalendar">
+                    <div id="calendarHeader"><button type="button" id="monthPrev" class="calendar-nav" aria-label="Предыдущий месяц">‹</button><strong id="monthLabel"></strong><button type="button" id="monthNext" class="calendar-nav" aria-label="Следующий месяц">›</button></div>
+                    <div id="calendarGrid" aria-label="Календарь записи"></div>
+                    <p id="calendarMessage" aria-live="polite">Сначала выберите отделение и врача.</p>
+                    <button type="button" id="nearestDateButton" hidden></button>
+                    <div id="timeSlots"></div>
+                </div>
+                <div class="service-fields" id="serviceDateTime" hidden>
+                    <label for="serviceDay">Дата</label><input type="date" id="serviceDay">
+                    <label for="serviceTime" class="mt-3">Время</label><select id="serviceTime"><option value="">Выберите время</option></select>
+                </div>
                 <div class="error" th:if="${#fields.hasErrors('appointmentDate')}" th:errors="*{appointmentDate}"></div>
             </div>
 
@@ -52,17 +114,18 @@
                 <label>Статус</label>
                 <select th:field="*{status}">
                     <option value="">Выберите статус</option>
-                    <option value="Запланирован">Запланирован</option>
-                    <option value="Завершен">Завершен</option>
-                    <option value="Отменен">Отменен</option>
-                    <option value="Пропущен">Пропущен</option>
+                    <option value="pending">Ожидает подтверждения</option>
+                    <option value="confirmed">Подтверждена</option>
+                    <option value="cancelled">Отменена</option>
+                    <option value="completed">Завершена</option>
+                    <option value="no_show">Неявка</option>
                 </select>
                 <div class="error" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></div>
             </div>
             <input th:if="${isPatientOnly}" type="hidden" th:field="*{status}">
 
             <div class="form-group">
-                <label id="commentLabel">Жалоба пациента</label>
+                <label id="commentLabel" for="complaint">Жалоба пациента</label>
                 <textarea th:field="*{complaint}" rows="3"></textarea>
                 <div class="error" th:if="${#fields.hasErrors('complaint')}" th:errors="*{complaint}"></div>
             </div>
@@ -129,7 +192,58 @@
   const total = document.getElementById('serviceTotal');
   const serviceChecks = [...document.querySelectorAll('[name="serviceIds"]')];
   const commentLabel = document.getElementById('commentLabel');
+  const hiddenDateTime = document.getElementById('appointmentDate');
+  const calendar = document.getElementById('doctorCalendar');
+  const serviceDateTime = document.getElementById('serviceDateTime');
+  const serviceDay = document.getElementById('serviceDay');
+  const serviceTime = document.getElementById('serviceTime');
+  const calendarGrid = document.getElementById('calendarGrid');
+  const monthLabel = document.getElementById('monthLabel');
+  const calendarMessage = document.getElementById('calendarMessage');
+  const timeSlots = document.getElementById('timeSlots');
+  const nearestDateButton=document.getElementById('nearestDateButton');
+  const form=document.querySelector('form'); const bookingMessage=document.getElementById('bookingMessage');
+  let shownMonth = new Date(); shownMonth.setDate(1);
+  let selectedDay = null;
   const refreshTotal = () => total.textContent = serviceChecks.filter(x => x.checked).reduce((sum, x) => sum + Number(x.dataset.cost || 0), 0).toLocaleString('ru-RU');
+  const localDate = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  const renderCalendar = async () => {
+    monthLabel.textContent = shownMonth.toLocaleDateString('ru-RU',{month:'long',year:'numeric'});
+    if (!department || !doctor || !doctor.value) {
+      calendarGrid.innerHTML=''; calendarMessage.textContent='Сначала выберите отделение и врача.'; return;
+    }
+    const month=localDate(shownMonth).slice(0,7);
+    calendarGrid.innerHTML=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((day,index)=>`<span class="calendar-weekday${index>=5?' weekend':''}">${day}</span>`).join('');
+    try {
+      const response=await fetch(`/appointments/availability/month?doctorId=${doctor.value}&month=${month}-01`);
+      if(!response.ok) throw new Error();
+      const days=await response.json();
+      const first=new Date(`${month}-01T00:00:00`); const offset=(first.getDay()+6)%7;
+      for(let i=0;i<offset;i++){const spacer=document.createElement('span');spacer.className='calendar-spacer';calendarGrid.append(spacer);}
+      const today=new Date(); today.setHours(0,0,0,0);
+      for(let day=1;day<=new Date(shownMonth.getFullYear(),shownMonth.getMonth()+1,0).getDate();day++) {
+        const date=new Date(shownMonth.getFullYear(),shownMonth.getMonth(),day); const iso=localDate(date);
+        const button=document.createElement('button'); button.type='button'; button.className='calendar-day'; button.textContent=day;
+        button.disabled=days[iso]!==true || date<today; button.title=button.disabled?'Нет свободных мест':'Есть свободное время';
+        if(date.getDay()===0||date.getDay()===6)button.classList.add('weekend');
+        if(iso===localDate(today))button.classList.add('today');
+        if(selectedDay===iso)button.classList.add('selected');
+        button.addEventListener('click',()=>selectDate(iso)); calendarGrid.append(button);
+      }
+    } catch { calendarMessage.textContent='Не удалось загрузить расписание. Повторите попытку.'; }
+  };
+  const selectDate=async iso=>{
+    selectedDay=iso; hiddenDateTime.value=''; timeSlots.innerHTML=''; nearestDateButton.hidden=true; renderCalendar();
+    try {
+      const response=await fetch(`/appointments/availability?doctorId=${doctor.value}&date=${iso}`);
+      const data=await response.json(); if(!response.ok)throw new Error();
+      if(!data.available){calendarMessage.textContent='На этот день нет свободных мест.';if(data.nearestDate){nearestDateButton.textContent=`Ближайшая дата: ${new Date(`${data.nearestDate}T00:00:00`).toLocaleDateString('ru-RU')}`;nearestDateButton.hidden=false;nearestDateButton.onclick=()=>{const d=new Date(`${data.nearestDate}T00:00:00`);shownMonth=new Date(d.getFullYear(),d.getMonth(),1);selectDate(data.nearestDate);};}return;}
+      calendarMessage.textContent='Выберите свободное время.';
+      data.slots.forEach(slot=>{const button=document.createElement('button');button.type='button';button.className='time-slot';button.textContent=slot.time;button.disabled=!slot.available;
+        button.addEventListener('click',()=>{timeSlots.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));button.classList.add('selected');hiddenDateTime.value=`${iso}T${slot.time}`;});timeSlots.append(button);});
+    } catch {calendarMessage.textContent='Не удалось загрузить время приёма.';}
+  };
+  const populateServiceTimes=()=>{serviceTime.innerHTML='<option value="">Выберите время</option>';for(let h=9;h<17;h++)for(const m of [0,30]){const value=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;const option=document.createElement('option');option.value=value;option.textContent=value;serviceTime.append(option);}};
   const refreshDoctors = () => {
     if (!department || !doctor) return;
     [...doctor.options].forEach(option => {
@@ -137,6 +251,7 @@
       option.hidden = !match;
       if (!match && option.selected) doctor.value = '';
     });
+    selectedDay=null; hiddenDateTime.value=''; timeSlots.innerHTML=''; renderCalendar();
   };
   const setType = value => {
     typeInput.value = value;
@@ -145,10 +260,29 @@
     tabs.forEach(tab => { tab.classList.toggle('active', tab.dataset.type === value); tab.setAttribute('aria-selected', tab.dataset.type === value); });
     doctorFields.forEach(group => { group.hidden = services; group.querySelectorAll('select,input,textarea').forEach(control => { control.disabled = services; if (services) control.value = ''; }); });
     serviceFields.forEach(group => { group.hidden = !services; group.querySelectorAll('input,select,textarea').forEach(control => control.disabled = !services); });
+    calendar.hidden=services; serviceDateTime.hidden=!services; serviceDay.disabled=!services; serviceTime.disabled=!services;
+    if(services){hiddenDateTime.value='';populateServiceTimes();}else{serviceDay.value='';serviceTime.value='';}
   };
   tabs.forEach(tab => tab.addEventListener('click', () => setType(tab.dataset.type)));
   department?.addEventListener('change', refreshDoctors);
+  doctor?.addEventListener('change', refreshDoctors);
+  document.getElementById('monthPrev')?.addEventListener('click',()=>{shownMonth.setMonth(shownMonth.getMonth()-1);renderCalendar();});
+  document.getElementById('monthNext')?.addEventListener('click',()=>{shownMonth.setMonth(shownMonth.getMonth()+1);renderCalendar();});
+  serviceDay?.addEventListener('change',()=>{hiddenDateTime.value=serviceDay.value&&serviceTime.value?`${serviceDay.value}T${serviceTime.value}`:'';});
+  serviceTime?.addEventListener('change',()=>{hiddenDateTime.value=serviceDay.value&&serviceTime.value?`${serviceDay.value}T${serviceTime.value}`:'';});
   serviceChecks.forEach(check => check.addEventListener('change', refreshTotal));
+  if(form.dataset.patientOnly==='true' && !form.action.endsWith('/update')) form.addEventListener('submit',async event=>{
+    event.preventDefault(); bookingMessage.className='mt-3 text-sm text-slate-600'; bookingMessage.textContent='Сохраняем запись…';
+    try{
+      const response=await fetch(form.action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},body:new FormData(form)});
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.message||data.detail||data.error||'Не удалось создать запись.');
+      bookingMessage.className='mt-3 text-sm text-emerald-700';bookingMessage.textContent=data.message;
+      hiddenDateTime.value='';selectedDay=null;timeSlots.innerHTML='';serviceChecks.forEach(check=>check.checked=false);refreshTotal();
+      if(typeInput.value==='DOCTOR_VISIT')renderCalendar();
+      document.dispatchEvent(new CustomEvent('appointment-slots-changed'));
+    }catch(error){bookingMessage.className='mt-3 text-sm text-rose-600';bookingMessage.textContent=error.message;}
+  });
   setType(typeInput.value || 'DOCTOR_VISIT'); refreshDoctors(); refreshTotal();
 })();
 </script>

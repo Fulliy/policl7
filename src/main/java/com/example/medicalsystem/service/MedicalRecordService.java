@@ -90,6 +90,10 @@ public class MedicalRecordService {
         return repository.findByAppointment_IdAppointment(idAppointment);
     }
 
+    public List<MedicalRecord> findAllForPatient(Integer patientId) {
+        return repository.findAllForPatient(patientId);
+    }
+
     private Optional<Integer> parseId(String value) {
         try {
             return Optional.of(Integer.parseInt(value));

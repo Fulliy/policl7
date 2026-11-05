@@ -5,13 +5,13 @@ import com.example.medicalsystem.appointment.service.AppointmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -50,7 +50,20 @@ public class AppointmentApiController {
     @Operation(summary = "Удалить запись с проверкой владельца")
     public void delete(@PathVariable Integer id, Authentication auth) { service.delete(id, auth); }
 
-    public record Request(@NotNull @FutureOrPresent LocalDateTime appointmentDate, String status,
+    @PostMapping("/{id}/cancel")
+    @Operation(summary = "Отменить запись и освободить слот")
+    public AppointmentDto cancel(@PathVariable Integer id, Authentication auth) {
+        return toDto(service.cancel(id, auth));
+    }
+
+    @GetMapping("/availability")
+    @Operation(summary = "Доступность слотов врача на дату")
+    public AppointmentService.SlotAvailability availability(@RequestParam Integer doctorId,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date) {
+        return service.availability(doctorId, date);
+    }
+
+    public record Request(@NotNull(message = "Дата и время обязательны.") LocalDateTime appointmentDate, String status,
                           String complaint, Integer userId, Integer departmentId, Integer doctorId,
                           com.example.medicalsystem.appointment.model.AppointmentType type, List<Integer> serviceIds) {
         AppointmentService.AppointmentRequest toRequest() {

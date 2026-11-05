@@ -46,6 +46,7 @@
             <article th:each="appointment : ${appointments}"
                      th:attr="data-appointment-date=${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'yyyy-MM-dd''T''HH:mm') : ''}"
                      class="patient-appointment grid gap-5 py-5 first:pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <p th:if="${appointment.requiresReschedule}" class="sm:col-span-2 rounded-xl border border-clinic-100 bg-clinic-50 px-4 py-3 font-semibold text-clinic-700">Приём требует переноса, регистратура свяжется с вами</p>
                 <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                     <div class="flex items-start gap-3">
                         <span class="grid h-11 w-11 flex-none place-items-center rounded-xl bg-clinic-50 text-clinic-600">
@@ -63,9 +64,9 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                    <span class="mr-1 rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${appointment.status}">Запланирован</span>
+                    <span class="mr-1 rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${appointment.statusLabel}">Ожидает подтверждения</span>
                     <a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 transition hover:bg-clinic-50">Перенести</a>
-                    <form th:if="${isPatientOnly}" th:action="@{/appointments/{id}/cancel(id=${appointment.idAppointment})}" method="post"><button type="submit" class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50" onclick="return confirm('Отменить запись?')">Отменить</button></form>
+                    <form th:if="${isPatientOnly}" th:action="@{/appointments/{id}/cancel(id=${appointment.idAppointment})}" method="post"><button type="submit" class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Отменить</button></form>
                 </div>
             </article>
             <p id="appointments-empty" th:if="${appointments.isEmpty()}" class="py-12 text-center text-sm text-slate-500">Записей пока нет. Вы можете выбрать врача и создать новую запись.</p>
@@ -86,7 +87,7 @@
                 <td class="p-3" th:text="${appointment.user != null ? appointment.user.displayName : '—'}">Пациент</td>
                 <td class="p-3" th:text="${appointment.doctor != null ? appointment.doctor.displayName : '—'}">Врач</td>
                 <td class="p-3" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'dd.MM.yyyy HH:mm') : '—'}">12.11.2026 10:30</td>
-                <td class="p-3" th:text="${appointment.status}">Запланирован</td>
+                <td class="p-3" th:text="${appointment.statusLabel}">Ожидает подтверждения</td>
                 <td class="p-3" th:text="${appointment.complaint}">Жалоба</td>
                 <td class="p-3"><a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="font-medium text-clinic-700 hover:underline">Изменить</a>
                     <form th:action="@{/appointments/{id}/delete(id=${appointment.idAppointment})}" method="post" class="inline">
@@ -105,6 +106,16 @@
 
     <script>
         (() => {
+            document.querySelectorAll('#patient-appointment-list form[action*="/cancel"]').forEach(form => {
+                form.addEventListener('submit', async event => {
+                    event.preventDefault();
+                    if (!confirm('Отменить запись?')) return;
+                    const response = await fetch(form.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: new FormData(form) });
+                    if (!response.ok) { alert('Не удалось отменить запись. Обновите страницу и попробуйте ещё раз.'); return; }
+                    form.closest('.patient-appointment')?.remove();
+                    document.dispatchEvent(new CustomEvent('appointment-slots-changed'));
+                });
+            });
         })();
     </script>
 </main>

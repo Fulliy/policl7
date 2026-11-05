@@ -65,3 +65,98 @@ input:focus, select:focus, textarea:focus { border-color:var(--teal) !important;
     .wrap { width:calc(100% - 28px); margin:18px auto !important; }
     .grid { grid-template-columns:1fr !important; }
 }
+
+/* Shared, accessible polish for the portal and its legacy screens. */
+:root {
+    --clinic-bg: #f5faf9;
+    --clinic-paper: #ffffff;
+    --clinic-ink: #112a3d;
+    --clinic-muted: #526978;
+    --clinic-accent: #0e8f89;
+    --clinic-accent-dark: #08716d;
+    --clinic-mint: #e8f7f4;
+    --clinic-border: #dcece9;
+    --clinic-radius: 16px;
+    --clinic-radius-control: 11px;
+    --clinic-space: 24px;
+    --clinic-body-size: 16px;
+    --clinic-label-size: 14px;
+    --clinic-shadow: 0 6px 22px rgba(17, 42, 61, .07);
+}
+
+html { min-height: 100%; }
+body {
+    min-height: 100vh;
+    color: var(--clinic-ink) !important;
+    background: var(--clinic-bg) !important;
+    font-size: var(--clinic-body-size);
+    line-height: 1.55;
+}
+
+.text-slate-500, .text-slate-400 { color: var(--clinic-muted) !important; }
+.text-sm { font-size: 1rem !important; line-height: 1.55 !important; }
+.text-xs { font-size: var(--clinic-label-size) !important; line-height: 1.45 !important; }
+.text-3xl { font-size: clamp(2rem, 3vw, 2.25rem) !important; line-height: 1.15 !important; }
+.text-4xl { font-size: clamp(2.15rem, 3.4vw, 2.4rem) !important; line-height: 1.12 !important; }
+
+.portal-content, .min-w-0 > main { width: min(100%, 1024px) !important; margin-inline: auto !important; padding-inline: clamp(16px, 3vw, 36px) !important; }
+#portal-sidebar { border-color: var(--clinic-border); }
+#portal-sidebar nav { gap: 6px !important; }
+#portal-sidebar nav a, #portal-sidebar nav button {
+    min-height: 46px;
+    border-radius: 11px;
+    font-size: 15px;
+    transition: color .18s ease, background-color .18s ease, transform .18s ease;
+}
+#portal-sidebar nav a:hover { color: var(--clinic-accent-dark) !important; transform: translateX(2px); }
+#portal-sidebar nav a[class*="bg-clinic-50"] { color: var(--clinic-accent-dark) !important; }
+#portal-sidebar nav a svg { flex: 0 0 auto; }
+.min-w-0 > header { color: var(--clinic-muted); }
+.min-w-0 > header .text-slate-500 { color: #435d6d !important; }
+
+main article[class*="rounded-2xl"],
+main section[class*="rounded-2xl"],
+main a[class*="rounded-2xl"] {
+    border-radius: var(--clinic-radius) !important;
+}
+main article[class*="bg-white"],
+main section[class*="bg-white"],
+main a[class*="bg-white"] {
+    border-color: var(--clinic-border) !important;
+    box-shadow: var(--clinic-shadow);
+}
+main a[class*="bg-white"] { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+main a[class*="bg-white"]:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(17, 42, 61, .10); }
+main h1 { margin-bottom: 0; }
+main header > p + h1, main header > h1 + p { margin-top: 8px !important; }
+main h2 { line-height: 1.3; }
+
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    min-height: 44px;
+    border-radius: var(--clinic-radius-control) !important;
+    font: inherit;
+}
+input::placeholder, textarea::placeholder { color: #526978; opacity: 1; }
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+button:focus-visible, a:focus-visible {
+    outline: 3px solid rgba(14, 143, 137, .32);
+    outline-offset: 2px;
+}
+button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacity: .65; }
+button, .btn, .link-btn { min-height: 44px; }
+table { border-radius: var(--clinic-radius) !important; overflow: hidden; }
+th { font-size: var(--clinic-label-size); }
+tbody tr { transition: background-color .16s ease; }
+tbody tr:hover { background-color: #f7fcfb; }
+
+@media (max-width: 700px) {
+    body { padding: 0 !important; }
+    .portal-content { padding: 20px 16px 32px !important; }
+    .min-w-0 > main { padding: 20px 16px 32px !important; }
+    main article[class*="p-5"], main article[class*="p-6"] { padding: 20px !important; }
+    table { display: block; max-width: 100%; overflow-x: auto; white-space: nowrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}

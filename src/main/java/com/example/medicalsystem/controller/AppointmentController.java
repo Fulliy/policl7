@@ -12,12 +12,18 @@ import jakarta.validation.Valid;
 import jakarta.validation.Validator;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -92,7 +98,7 @@ public class AppointmentController {
             appointment.setDoctor(selectedDoctor);
         }
         if (isPatientOnly(principal)) {
-            appointment.setStatus("Запланирован");
+            appointment.setStatus("pending");
         }
         model.addAttribute("appointment", appointment);
         com.example.medicalsystem.model.User currentUser = userService.findByUsername(principal.getUsername());
@@ -107,25 +113,33 @@ public class AppointmentController {
 
     @PostMapping("/save")
     @Operation(summary = "Создание записи на приём")
-    public String save(@ModelAttribute("appointment") Appointment appointment,
+    public Object save(@ModelAttribute("appointment") Appointment appointment,
                        BindingResult result,
                        @RequestParam(name = "serviceIds", required = false) java.util.List<Integer> serviceIds,
                        @RequestParam(name = "doctorId", required = false) Integer doctorId,
+                       @RequestParam(name = "holdId", required = false) Integer holdId,
                        Model model,
-                       @AuthenticationPrincipal UserDetails principal) {
+                       @AuthenticationPrincipal UserDetails principal,
+                       @RequestHeader(value = "X-Requested-With", required = false) String requestedWith) {
+        boolean ajax = "XMLHttpRequest".equals(requestedWith);
+        boolean administrator = hasAuthority(principal, "ADMIN");
+        boolean newAppointment = appointment.getIdAppointment() == null;
         if (isPatientOnly(principal)) {
             appointment.setUser(userService.findByUsername(principal.getUsername()));
-            appointment.setStatus("Запланирован");
+            appointment.setStatus("pending");
         }
         applyAppointmentType(appointment, serviceIds, doctorId, result);
         validateAppointment(appointment, result);
         validateDoctorAvailability(appointment, null, result);
         if (result.hasErrors()) {
+            if (ajax) return org.springframework.http.ResponseEntity.badRequest().body(
+                    java.util.Map.of("message", result.getAllErrors().get(0).getDefaultMessage()));
             model.addAttribute("appointment", appointment);
             addFormOptions(model, principal);
             return "appointmentForm";
         }
-        appointmentService.save(appointment);
+        appointmentService.saveBooking(appointment, holdId, administrator, administrator && newAppointment);
+        if (ajax) return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Запись создана."));
         return "redirect:/appointments";
     }
 
@@ -150,6 +164,10 @@ public class AppointmentController {
         Appointment existing = appointmentService.findById(id);
         ensureOwnerOrStaff(existing, principal);
         if (isPatientOnly(principal)) {
+            if (existing.isRequiresReschedule()) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Приём требует переноса, обратитесь в регистратуру.");
+            }
             appointment.setUser(existing.getUser());
             appointment.setStatus(existing.getStatus());
         }
@@ -163,7 +181,7 @@ public class AppointmentController {
             return "appointmentForm";
         }
         appointment.setIdAppointment(id);
-        appointmentService.save(appointment);
+        appointmentService.saveBooking(appointment, null, hasAuthority(principal, "ADMIN"), false);
         return "redirect:/appointments";
     }
 
@@ -175,14 +193,53 @@ public class AppointmentController {
     }
 
     @PostMapping("/{id}/cancel")
-    public String cancel(@PathVariable Integer id, @AuthenticationPrincipal UserDetails principal) {
+    public Object cancel(@PathVariable Integer id, @AuthenticationPrincipal UserDetails principal,
+                         @RequestHeader(value = "X-Requested-With", required = false) String requestedWith) {
         ensureOwnerOrStaff(appointmentService.findById(id), principal);
         try {
             appointmentService.cancel(id);
         } catch (IllegalStateException ex) {
             throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, ex.getMessage());
         }
+        if ("XMLHttpRequest".equals(requestedWith)) return org.springframework.http.ResponseEntity.ok(
+                java.util.Map.of("message", "Запись отменена; слот снова доступен."));
         return "redirect:/appointments";
+    }
+
+    @GetMapping("/availability")
+    @ResponseBody
+    public AppointmentService.SlotAvailability availability(
+            @RequestParam Integer doctorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        if (userService.findById(doctorId) == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Врач не найден.");
+        }
+        return appointmentService.availability(doctorId, date);
+    }
+
+    @PostMapping("/holds")
+    @ResponseBody
+    @PreAuthorize("hasAuthority('PATIENT')")
+    public AppointmentService.HoldResult reserveSlot(@RequestBody ReservationRequest request,
+                                                       @AuthenticationPrincipal UserDetails principal) {
+        if (request.doctorId() == null || request.appointmentDate() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Выберите врача, дату и время приёма.");
+        }
+        com.example.medicalsystem.model.User patient = userService.findByUsername(principal.getUsername());
+        return appointmentService.reserveSlot(patient.getIdUser(), request.doctorId(), request.appointmentDate());
+    }
+
+    public record ReservationRequest(Integer doctorId, LocalDateTime appointmentDate) { }
+
+    @GetMapping("/availability/month")
+    @ResponseBody
+    public java.util.Map<LocalDate, Boolean> monthAvailability(
+            @RequestParam Integer doctorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate month) {
+        if (userService.findById(doctorId) == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Врач не найден.");
+        }
+        return appointmentService.monthAvailability(doctorId, month);
     }
 
     private boolean isPatientOnly(UserDetails principal) {
@@ -190,6 +247,10 @@ public class AppointmentController {
         boolean staff = principal.getAuthorities().stream()
                 .anyMatch(a -> "ADMIN".equals(a.getAuthority()) || "DOCTOR".equals(a.getAuthority()));
         return patient && !staff;
+    }
+
+    private boolean hasAuthority(UserDetails principal, String authority) {
+        return principal.getAuthorities().stream().anyMatch(item -> authority.equals(item.getAuthority()));
     }
 
     private void ensureOwnerOrStaff(Appointment appointment, UserDetails principal) {

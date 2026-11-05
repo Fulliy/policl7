@@ -12,7 +12,6 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -30,7 +29,6 @@ public class Appointment {
     private Integer idAppointment;
 
     @NotNull(message = "Дата и время приема обязательны")
-    @FutureOrPresent(message = "Дата приема не может быть в прошлом")
     private LocalDateTime appointmentDate;
 
     @NotBlank(message = "Статус обязателен")
@@ -65,6 +63,16 @@ public class Appointment {
     @jakarta.persistence.Column(name = "appointment_type", nullable = false, length = 20)
     private AppointmentType type = AppointmentType.DOCTOR_VISIT;
 
+    @NotNull
+    @jakarta.persistence.Column(name = "duration_minutes", nullable = false)
+    private Integer durationMinutes = 30;
+
+    @jakarta.persistence.Column(name = "requires_reschedule", nullable = false)
+    private boolean requiresReschedule;
+
+    @jakarta.persistence.Column(name = "created_by_admin", nullable = false)
+    private boolean createdByAdmin;
+
     public Appointment() {
     }
 
@@ -84,6 +92,19 @@ public class Appointment {
     public void setAppointmentDate(LocalDateTime appointmentDate) { this.appointmentDate = appointmentDate; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getStatusLabel() {
+        try {
+            return switch (AppointmentStatus.parse(status)) {
+                case pending -> "Ожидает подтверждения";
+                case confirmed -> "Подтверждена";
+                case cancelled -> "Отменена";
+                case completed -> "Завершена";
+                case no_show -> "Неявка";
+            };
+        } catch (IllegalArgumentException exception) {
+            return status;
+        }
+    }
     public String getComplaint() { return complaint; }
     public void setComplaint(String complaint) { this.complaint = complaint; }
     public User getUser() { return user; }
@@ -98,4 +119,10 @@ public class Appointment {
     public void setServices(List<MedicalServiceEntity> services) { this.services = services; }
     public AppointmentType getType() { return type; }
     public void setType(AppointmentType type) { this.type = type; }
+    public Integer getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
+    public boolean isRequiresReschedule() { return requiresReschedule; }
+    public void setRequiresReschedule(boolean value) { requiresReschedule = value; }
+    public boolean isCreatedByAdmin() { return createdByAdmin; }
+    public void setCreatedByAdmin(boolean value) { createdByAdmin = value; }
 }

@@ -29,6 +29,7 @@
             <article th:each="appointment : ${patientAppointments}"
                      th:attr="data-appointment-date=${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'yyyy-MM-dd''T''HH:mm') : ''}"
                      class="dashboard-appointment grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[1fr_auto] sm:items-center">
+                <p th:if="${appointment.requiresReschedule}" class="sm:col-span-2 rounded-xl border border-clinic-100 bg-clinic-50 px-4 py-3 text-sm font-semibold text-clinic-700">Приём требует переноса, регистратура свяжется с вами</p>
                 <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
                     <div><p class="text-sm font-semibold text-ink" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'dd.MM.yyyy') : 'Дата уточняется'}">12.11.2026</p><p class="mt-1 text-xs text-slate-500" th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'HH:mm') : 'Время уточняется'}">10:30</p></div>
                     <div><p class="text-sm font-medium text-slate-700" th:text="${appointment.doctor != null ? appointment.doctor.displayName : 'Врач уточняется'}">Иванов Иван Иванович</p><p class="mt-1 text-xs text-slate-500" th:text="${appointment.doctor != null and appointment.doctor.specialty != null ? appointment.doctor.specialty.specialtyName : 'Специальность уточняется'}">Терапевт</p></div>
@@ -59,18 +60,18 @@
             <a th:href="@{/appointments}" class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
                 <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">▣</span><h3 class="font-semibold text-ink">Записи на приём</h3><p class="mt-1 text-sm text-slate-500">Предстоящие и прошедшие визиты</p>
             </a>
-            <button type="button" data-coming-soon class="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
-                <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">♡</span><h3 class="font-semibold text-ink">Медкарта</h3><p class="mt-1 text-sm text-slate-500">История медицинских записей · Скоро</p>
-            </button>
-            <button type="button" data-coming-soon class="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
-                <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">↗</span><h3 class="font-semibold text-ink">Направления</h3><p class="mt-1 text-sm text-slate-500">Назначения специалистов · Скоро</p>
-            </button>
+            <a th:href="@{/medical-card}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
+                <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">♡</span><h3 class="font-semibold text-ink">Медкарта</h3><p class="mt-1 text-sm text-slate-500">История медицинских записей</p>
+            </a>
+            <a th:href="@{/patient/referrals}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
+                <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">↗</span><h3 class="font-semibold text-ink">Направления</h3><p class="mt-1 text-sm text-slate-500">Направления от ваших врачей</p>
+            </a>
             <button type="button" data-coming-soon class="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
                 <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">＋</span><h3 class="font-semibold text-ink">Справки</h3><p class="mt-1 text-sm text-slate-500">Медицинские справки · Скоро</p>
             </button>
-            <button type="button" data-coming-soon class="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
-                <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">⌖</span><h3 class="font-semibold text-ink">Прикрепления</h3><p class="mt-1 text-sm text-slate-500">Ваше медицинское учреждение · Скоро</p>
-            </button>
+            <a th:href="@{/patient/affiliations}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
+                <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">⌖</span><h3 class="font-semibold text-ink">Прикрепления</h3><p class="mt-1 text-sm text-slate-500">Ваши медицинские центры и врачи</p>
+            </a>
         </div>
     </section>
     <script>

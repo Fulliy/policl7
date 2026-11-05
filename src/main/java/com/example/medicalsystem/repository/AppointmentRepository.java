@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, Integer> {
@@ -18,6 +19,15 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
     List<Appointment> findByUser_IdUser(Integer idUser);
 
     List<Appointment> findByDoctor_IdUser(Integer doctorId);
+
+    List<Appointment> findByDoctor_IdUserAndAppointmentDateBetween(Integer doctorId, LocalDateTime start, LocalDateTime end);
+
+    List<Appointment> findByDoctor_IdUserAndAppointmentDateBetweenAndStatusIn(
+            Integer doctorId, LocalDateTime start, LocalDateTime end, List<String> statuses);
+
+    List<Appointment> findByRequiresRescheduleTrue();
+
+    List<Appointment> findByUser_IdUserAndAppointmentDate(Integer userId, LocalDateTime appointmentDate);
 
     List<Appointment> findByDoctor_IdUserAndAppointmentDate(Integer doctorId, LocalDateTime appointmentDate);
 

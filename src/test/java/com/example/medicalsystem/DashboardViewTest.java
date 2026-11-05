@@ -49,6 +49,9 @@ class DashboardViewTest {
         assertTrue(html.contains("specialtyId=4"));
         assertTrue(html.contains("doctorId=12"));
         assertTrue(html.contains("/appointments/new"));
+        assertTrue(html.contains("/medical-card"));
+        assertTrue(html.contains("/patient/referrals"));
+        assertTrue(html.contains("/patient/affiliations"));
         assertTrue(!html.contains("Рабочее пространство"));
     }
 
