@@ -139,7 +139,8 @@ public class AppointmentController {
             return "appointmentForm";
         }
         appointmentService.saveBooking(appointment, holdId, administrator, administrator && newAppointment);
-        if (ajax) return org.springframework.http.ResponseEntity.ok(java.util.Map.of("message", "Запись создана."));
+        if (ajax) return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                "message", "Запись создана.", "redirectUrl", "/appointments"));
         return "redirect:/appointments";
     }
 

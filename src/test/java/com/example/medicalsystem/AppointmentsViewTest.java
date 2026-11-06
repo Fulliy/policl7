@@ -131,7 +131,8 @@ class AppointmentsViewTest {
                 .andExpect(content().string(containsString("Приём врача")))
                 .andExpect(content().string(containsString("Услуги")))
                 .andExpect(content().string(containsString("calendarGrid")))
-                .andExpect(content().string(containsString("serviceTotal")));
+                .andExpect(content().string(containsString("serviceTotal")))
+                .andExpect(content().string(containsString("window.location.assign(data.redirectUrl||'/appointments')")));
     }
 
     private UsernamePasswordAuthenticationToken principal(String role) {

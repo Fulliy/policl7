@@ -203,7 +203,11 @@
   const timeSlots = document.getElementById('timeSlots');
   const nearestDateButton=document.getElementById('nearestDateButton');
   const form=document.querySelector('form'); const bookingMessage=document.getElementById('bookingMessage');
-  let shownMonth = new Date(); shownMonth.setDate(1);
+  const moscowToday = () => {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {timeZone:'Europe/Moscow',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(part => [part.type, part.value]));
+    return new Date(Number(parts.year), Number(parts.month) - 1, Number(parts.day));
+  };
+  let shownMonth = moscowToday(); shownMonth.setDate(1);
   let selectedDay = null;
   const refreshTotal = () => total.textContent = serviceChecks.filter(x => x.checked).reduce((sum, x) => sum + Number(x.dataset.cost || 0), 0).toLocaleString('ru-RU');
   const localDate = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -216,11 +220,12 @@
     calendarGrid.innerHTML=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((day,index)=>`<span class="calendar-weekday${index>=5?' weekend':''}">${day}</span>`).join('');
     try {
       const response=await fetch(`/appointments/availability/month?doctorId=${doctor.value}&month=${month}-01`);
-      if(!response.ok) throw new Error();
+      if(!response.ok) throw new Error('Не удалось загрузить расписание. Повторите попытку.');
       const days=await response.json();
+      if(!days || typeof days !== 'object') throw new Error('Сервер вернул некорректное расписание. Повторите попытку.');
       const first=new Date(`${month}-01T00:00:00`); const offset=(first.getDay()+6)%7;
       for(let i=0;i<offset;i++){const spacer=document.createElement('span');spacer.className='calendar-spacer';calendarGrid.append(spacer);}
-      const today=new Date(); today.setHours(0,0,0,0);
+      const today=moscowToday();
       for(let day=1;day<=new Date(shownMonth.getFullYear(),shownMonth.getMonth()+1,0).getDate();day++) {
         const date=new Date(shownMonth.getFullYear(),shownMonth.getMonth(),day); const iso=localDate(date);
         const button=document.createElement('button'); button.type='button'; button.className='calendar-day'; button.textContent=day;
@@ -230,18 +235,22 @@
         if(selectedDay===iso)button.classList.add('selected');
         button.addEventListener('click',()=>selectDate(iso)); calendarGrid.append(button);
       }
-    } catch { calendarMessage.textContent='Не удалось загрузить расписание. Повторите попытку.'; }
+      calendarMessage.textContent=Object.values(days).some(value=>value===true)
+        ? 'Выберите доступный день и время приёма.'
+        : 'Нет свободного времени, выберите другую дату или врача.';
+    } catch (error) { calendarMessage.textContent=error.message||'Не удалось загрузить расписание. Повторите попытку.'; console.error('Ошибка загрузки доступных дней:', error); }
   };
   const selectDate=async iso=>{
     selectedDay=iso; hiddenDateTime.value=''; timeSlots.innerHTML=''; nearestDateButton.hidden=true; renderCalendar();
     try {
       const response=await fetch(`/appointments/availability?doctorId=${doctor.value}&date=${iso}`);
-      const data=await response.json(); if(!response.ok)throw new Error();
+      const data=await response.json(); if(!response.ok)throw new Error(data.message||data.detail||'Не удалось загрузить время приёма.');
       if(!data.available){calendarMessage.textContent='На этот день нет свободных мест.';if(data.nearestDate){nearestDateButton.textContent=`Ближайшая дата: ${new Date(`${data.nearestDate}T00:00:00`).toLocaleDateString('ru-RU')}`;nearestDateButton.hidden=false;nearestDateButton.onclick=()=>{const d=new Date(`${data.nearestDate}T00:00:00`);shownMonth=new Date(d.getFullYear(),d.getMonth(),1);selectDate(data.nearestDate);};}return;}
+      if(!Array.isArray(data.slots)||!data.slots.some(slot=>slot.available)){calendarMessage.textContent='Нет свободного времени, выберите другую дату или врача.';return;}
       calendarMessage.textContent='Выберите свободное время.';
       data.slots.forEach(slot=>{const button=document.createElement('button');button.type='button';button.className='time-slot';button.textContent=slot.time;button.disabled=!slot.available;
         button.addEventListener('click',()=>{timeSlots.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));button.classList.add('selected');hiddenDateTime.value=`${iso}T${slot.time}`;});timeSlots.append(button);});
-    } catch {calendarMessage.textContent='Не удалось загрузить время приёма.';}
+    } catch(error) {calendarMessage.textContent=error.message||'Не удалось загрузить время приёма.';console.error('Ошибка загрузки свободного времени:',error);}
   };
   const populateServiceTimes=()=>{serviceTime.innerHTML='<option value="">Выберите время</option>';for(let h=9;h<17;h++)for(const m of [0,30]){const value=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;const option=document.createElement('option');option.value=value;option.textContent=value;serviceTime.append(option);}};
   const refreshDoctors = () => {
@@ -277,10 +286,8 @@
       const response=await fetch(form.action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'},body:new FormData(form)});
       const data=await response.json();
       if(!response.ok)throw new Error(data.message||data.detail||data.error||'Не удалось создать запись.');
-      bookingMessage.className='mt-3 text-sm text-emerald-700';bookingMessage.textContent=data.message;
-      hiddenDateTime.value='';selectedDay=null;timeSlots.innerHTML='';serviceChecks.forEach(check=>check.checked=false);refreshTotal();
-      if(typeInput.value==='DOCTOR_VISIT')renderCalendar();
       document.dispatchEvent(new CustomEvent('appointment-slots-changed'));
+      window.location.assign(data.redirectUrl||'/appointments');
     }catch(error){bookingMessage.className='mt-3 text-sm text-rose-600';bookingMessage.textContent=error.message;}
   });
   setType(typeInput.value || 'DOCTOR_VISIT'); refreshDoctors(); refreshTotal();

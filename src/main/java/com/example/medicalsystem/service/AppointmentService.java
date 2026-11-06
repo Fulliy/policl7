@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.time.LocalDate;
@@ -37,6 +38,7 @@ import java.time.temporal.WeekFields;
 @Service
 @Transactional
 public class AppointmentService {
+    private static final ZoneId CLINIC_ZONE = ZoneId.of("Europe/Moscow");
 
     private final AppointmentRepository repository;
     private final UserRepository userRepository;
@@ -146,7 +148,7 @@ public class AppointmentService {
             cleanupExpiredHolds();
             hold = holdRepository == null ? null : holdRepository
                     .findByIdAndPatient_IdUser(holdId, appointment.getUser().getIdUser()).orElse(null);
-            if (hold == null || !hold.getExpiresAt().isAfter(LocalDateTime.now())) throw holdExpired();
+            if (hold == null || !hold.getExpiresAt().isAfter(now())) throw holdExpired();
             if (!sameUserId(hold.getDoctor(), appointment.getDoctor())
                     || !java.util.Objects.equals(hold.getAppointmentDate(), appointment.getAppointmentDate())
                     || hold.getDurationMinutes() != duration) {
@@ -223,7 +225,7 @@ public class AppointmentService {
         hold.setDoctor(doctor);
         hold.setAppointmentDate(start);
         hold.setDurationMinutes(durationMinutes);
-        hold.setExpiresAt(LocalDateTime.now().plusMinutes(scheduling.getHoldDurationMinutes()));
+        hold.setExpiresAt(now().plusMinutes(scheduling.getHoldDurationMinutes()));
         try {
             AppointmentSlotHold saved = holdRepository.saveAndFlush(hold);
             return new HoldResult(saved.getId(), saved.getExpiresAt());
@@ -246,7 +248,7 @@ public class AppointmentService {
     }
 
     public void cleanupExpiredHolds() {
-        if (holdRepository != null) holdRepository.deleteExpired(LocalDateTime.now());
+        if (holdRepository != null) holdRepository.deleteExpired(now());
     }
 
     public void lockDoctorScheduleChange(Integer doctorId) {
@@ -307,7 +309,7 @@ public class AppointmentService {
 
     private void validateAppointmentWindow(LocalDateTime start, boolean active) {
         if (start == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Дата и время обязательны.");
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
         if (active && start.isBefore(now)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Слоты в прошлом недоступны.");
         if (active && start.isBefore(now.plusMinutes(scheduling.getMinNoticeMinutes()))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -325,7 +327,7 @@ public class AppointmentService {
                 || !sameUserId(existing.getDoctor(), updated.getDoctor())
                 || existing.getType() != updated.getType();
         if (changed && existing.getAppointmentDate() != null
-                && existing.getAppointmentDate().minusHours(scheduling.getCancellationDeadlineHours()).isBefore(LocalDateTime.now())) {
+                && existing.getAppointmentDate().minusHours(scheduling.getCancellationDeadlineHours()).isBefore(now())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Отмена возможна только по телефону регистратуры");
         }
@@ -337,7 +339,7 @@ public class AppointmentService {
     }
 
     private boolean withinBookingWindow(LocalDateTime start) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
         return !start.isBefore(now.plusMinutes(scheduling.getMinNoticeMinutes()))
                 && !start.isAfter(now.plusDays(scheduling.getMaxAdvanceDays()));
     }
@@ -365,7 +367,7 @@ public class AppointmentService {
         if (restriction != null && restriction.isBlocked()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Запись заблокирована администратором.");
         }
-        LocalDateTime since = LocalDateTime.now().minusDays(scheduling.getNoShowLookbackDays());
+        LocalDateTime since = now().minusDays(scheduling.getNoShowLookbackDays());
         long noShows = repository.findByUser_IdUser(patientId).stream()
                 .filter(a -> parseStatus(a.getStatus()) == AppointmentStatus.no_show)
                 .filter(a -> a.getAppointmentDate() != null && !a.getAppointmentDate().isBefore(since)).count();
@@ -420,7 +422,7 @@ public class AppointmentService {
     private boolean hasActiveHoldOverlap(Integer doctorId, LocalDateTime start, LocalDateTime end,
                                          Integer excludedHoldId, Integer excludedPatientId) {
         if (holdRepository == null) return false;
-        return holdRepository.findByDoctor_IdUserAndExpiresAtAfter(doctorId, LocalDateTime.now()).stream()
+        return holdRepository.findByDoctor_IdUserAndExpiresAtAfter(doctorId, now()).stream()
                 .filter(hold -> !java.util.Objects.equals(hold.getId(), excludedHoldId))
                 .filter(hold -> !java.util.Objects.equals(hold.getPatient().getIdUser(), excludedPatientId))
                 .anyMatch(hold -> overlaps(start, end, hold.getAppointmentDate(),
@@ -517,7 +519,7 @@ public class AppointmentService {
                 || current == AppointmentStatus.cancelled) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Этот статус записи нельзя отменить.");
         }
-        if (appointment.getAppointmentDate().minusHours(scheduling.getCancellationDeadlineHours()).isBefore(LocalDateTime.now())) {
+        if (appointment.getAppointmentDate().minusHours(scheduling.getCancellationDeadlineHours()).isBefore(now())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Отмена возможна только по телефону регистратуры");
         }
@@ -630,7 +632,7 @@ public class AppointmentService {
                         .toList();
             }
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
         if ("past".equals(visitPeriod)) {
             appointments = appointments.stream()
                     .filter(appointment -> appointment.getAppointmentDate() != null
@@ -643,6 +645,10 @@ public class AppointmentService {
                     .toList();
         }
         return PaginationHelper.pageFromList(appointments, page);
+    }
+
+    private static LocalDateTime now() {
+        return LocalDateTime.now(CLINIC_ZONE);
     }
 
     public List<Appointment> findByStatus(String status) {
