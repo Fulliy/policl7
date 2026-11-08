@@ -53,6 +53,8 @@ public class MainController {
                     .filter(appointment -> appointment.getAppointmentDate() != null
                             && !appointment.getAppointmentDate().isBefore(startOfToday)
                             && appointment.getAppointmentDate().isBefore(startOfTomorrow))
+                    .filter(appointment -> "pending".equalsIgnoreCase(appointment.getStatus())
+                            || "confirmed".equalsIgnoreCase(appointment.getStatus()))
                     .toList();
             var departmentStats = upcomingAppointments.stream()
                     .collect(Collectors.groupingBy(appointment -> appointment.getDepartment() == null
@@ -95,6 +97,8 @@ public class MainController {
                     .filter(appointment -> appointment.getAppointmentDate() != null
                             && !appointment.getAppointmentDate().isBefore(startOfToday)
                             && appointment.getAppointmentDate().isBefore(startOfNextWeek))
+                    .filter(appointment -> "pending".equalsIgnoreCase(appointment.getStatus())
+                            || "confirmed".equalsIgnoreCase(appointment.getStatus()))
                     .sorted(Comparator.comparing(com.example.medicalsystem.model.Appointment::getAppointmentDate))
                     .toList();
             model.addAttribute("doctor", doctor);
@@ -111,6 +115,8 @@ public class MainController {
             var patient = userService.findByUsername(principal.getUsername());
             LocalDateTime now = LocalDateTime.now(ZoneId.of("Europe/Moscow"));
             var patientAppointments = appointmentService.findByUser(patient.getIdUser()).stream()
+                    .filter(appointment -> appointment.getAppointmentDate() != null)
+                    .filter(appointment -> !"cancelled".equalsIgnoreCase(appointment.getStatus()))
                     .sorted(Comparator.comparing(Appointment::getAppointmentDate,
                             Comparator.nullsLast(Comparator.naturalOrder())))
                     .toList();
@@ -157,6 +163,7 @@ public class MainController {
             });
             model.addAttribute("patient", patient);
             model.addAttribute("patientAppointments", patientAppointments);
+            model.addAttribute("now", now);
             model.addAttribute("nextAppointment", nextAppointment);
             model.addAttribute("patientDoctors", doctors);
             model.addAttribute("patientSpecialties", specialties);

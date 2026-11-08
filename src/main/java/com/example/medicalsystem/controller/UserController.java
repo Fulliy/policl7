@@ -1,9 +1,12 @@
 package com.example.medicalsystem.controller;
 
 import com.example.medicalsystem.model.User;
+import com.example.medicalsystem.model.RoleEnum;
 import com.example.medicalsystem.service.DepartmentService;
 import com.example.medicalsystem.service.SpecialtyService;
 import com.example.medicalsystem.service.UserService;
+import com.example.medicalsystem.repository.ClinicBranchRepository;
+import com.example.medicalsystem.repository.DepartmentRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import java.util.List;
 
 @Controller
 @RequestMapping("/users")
@@ -27,13 +31,19 @@ public class UserController {
     private final UserService service;
     private final DepartmentService departmentService;
     private final SpecialtyService specialtyService;
+    private final ClinicBranchRepository branchRepository;
+    private final DepartmentRepository departments;
 
     public UserController(UserService service,
                           DepartmentService departmentService,
-                          SpecialtyService specialtyService) {
+                          SpecialtyService specialtyService,
+                          ClinicBranchRepository branchRepository,
+                          DepartmentRepository departments) {
         this.service = service;
         this.departmentService = departmentService;
         this.specialtyService = specialtyService;
+        this.branchRepository = branchRepository;
+        this.departments = departments;
     }
 
     @GetMapping
@@ -54,23 +64,32 @@ public class UserController {
     @GetMapping("/new")
     public String showCreateForm(Model model) {
         model.addAttribute("user", new User());
+        model.addAttribute("roles", RoleEnum.values());
         addRelationLists(model);
         return "userForm";
     }
 
     @PostMapping("/save")
     public String save(@Valid @ModelAttribute("user") User user,
+                       @RequestParam(name = "doctorDepartmentIds", required = false) List<Integer> doctorDepartmentIds,
+                       @RequestParam(name = "branchIds", required = false) List<Integer> branchIds,
+                       @RequestParam(name = "roles", required = false) List<RoleEnum> roles,
                        BindingResult result,
                        Model model) {
+        if (roles != null) user.setRoles(new java.util.HashSet<>(roles));
         if (result.hasErrors()) {
             model.addAttribute("user", user);
+            model.addAttribute("roles", RoleEnum.values());
             addRelationLists(model);
             return "userForm";
         }
         try {
+            assignDoctorLocations(user, doctorDepartmentIds, branchIds);
             service.save(user);
         } catch (Exception ex) {
+            model.addAttribute("returnUrl", "/admin/registry?tab=patients");
             model.addAttribute("user", user);
+            model.addAttribute("roles", RoleEnum.values());
             addRelationLists(model);
             model.addAttribute("saveError", "Не удалось сохранить пользователя. Проверьте данные и попробуйте еще раз.");
             return "userForm";
@@ -79,33 +98,47 @@ public class UserController {
     }
 
     @GetMapping("/{id}/edit")
-    public String showEditForm(@PathVariable Integer id, Model model) {
+    public String showEditForm(@PathVariable Integer id,
+                               @RequestParam(defaultValue = "patients") String section,
+                               Model model) {
         model.addAttribute("user", service.findById(id));
+        model.addAttribute("roles", RoleEnum.values());
+        model.addAttribute("returnUrl", "/admin/registry?tab=" + ("doctors".equals(section) ? "doctors" : "patients"));
         addRelationLists(model);
         return "userForm";
     }
 
     @PostMapping("/update")
     public String update(@RequestParam Integer id,
+                         @RequestParam(defaultValue = "patients") String section,
                          @Valid @ModelAttribute("user") User user,
+                         @RequestParam(name = "doctorDepartmentIds", required = false) List<Integer> doctorDepartmentIds,
+                         @RequestParam(name = "branchIds", required = false) List<Integer> branchIds,
+                         @RequestParam(name = "roles", required = false) List<RoleEnum> roles,
                          BindingResult result,
                          Model model) {
+        if (roles != null) user.setRoles(new java.util.HashSet<>(roles));
         if (result.hasErrors()) {
             user.setIdUser(id);
+            model.addAttribute("returnUrl", "/admin/registry?tab=" + ("doctors".equals(section) ? "doctors" : "patients"));
             model.addAttribute("user", user);
+            model.addAttribute("roles", RoleEnum.values());
             addRelationLists(model);
             return "userForm";
         }
         user.setIdUser(id);
         try {
+            assignDoctorLocations(user, doctorDepartmentIds, branchIds);
             service.save(user);
         } catch (Exception ex) {
+            model.addAttribute("returnUrl", "/admin/registry?tab=" + ("doctors".equals(section) ? "doctors" : "patients"));
             model.addAttribute("user", user);
+            model.addAttribute("roles", RoleEnum.values());
             addRelationLists(model);
             model.addAttribute("saveError", "Не удалось сохранить пользователя. Проверьте данные и попробуйте еще раз.");
             return "userForm";
         }
-        return "redirect:/users";
+        return "redirect:/admin/registry?tab=" + ("doctors".equals(section) ? "doctors" : "patients");
     }
 
     @PostMapping("/{id}/delete")
@@ -124,5 +157,17 @@ public class UserController {
     private void addRelationLists(Model model) {
         model.addAttribute("departments", departmentService.findAll());
         model.addAttribute("specialties", specialtyService.findAll());
+        model.addAttribute("branches", branchRepository.findAllByOrderByNameAsc());
+    }
+
+    private void assignDoctorLocations(User user, List<Integer> departmentIds, List<Integer> branchIds) {
+        if (user.getRoles() == null || !user.getRoles().contains(com.example.medicalsystem.model.RoleEnum.DOCTOR)) return;
+        user.setDoctorDepartments(departmentIds == null ? List.of() : departmentIds.stream().distinct()
+                .map(id -> departments.findById(id).orElseThrow()).toList());
+        user.setBranches(branchIds == null ? List.of() : branchIds.stream().distinct()
+                .map(id -> branchRepository.findById(id).orElseThrow()).toList());
+        if (user.getDepartment() == null && !user.getDoctorDepartments().isEmpty()) {
+            user.setDepartment(user.getDoctorDepartments().get(0));
+        }
     }
 }

@@ -50,6 +50,14 @@ public class Appointment {
     @JoinColumn(name = "id_department")
     private Department department;
 
+    @ManyToOne
+    @JoinColumn(name = "id_branch")
+    private ClinicBranch branch;
+
+    @ManyToOne
+    @JoinColumn(name = "id_goal")
+    private AppointmentGoal goal;
+
     @OneToMany(mappedBy = "appointment")
     private List<MedicalRecord> medicalRecords;
 
@@ -113,6 +121,10 @@ public class Appointment {
     public void setDoctor(User doctor) { this.doctor = doctor; }
     public Department getDepartment() { return department; }
     public void setDepartment(Department department) { this.department = department; }
+    public ClinicBranch getBranch() { return branch; }
+    public void setBranch(ClinicBranch branch) { this.branch = branch; }
+    public AppointmentGoal getGoal() { return goal; }
+    public void setGoal(AppointmentGoal goal) { this.goal = goal; }
     public List<MedicalRecord> getMedicalRecords() { return medicalRecords; }
     public void setMedicalRecords(List<MedicalRecord> medicalRecords) { this.medicalRecords = medicalRecords; }
     public List<MedicalServiceEntity> getServices() { return services; }

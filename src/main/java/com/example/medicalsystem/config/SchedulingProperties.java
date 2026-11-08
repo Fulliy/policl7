@@ -14,6 +14,8 @@ public class SchedulingProperties {
     private int defaultVisitDurationMinutes = 30;
     private int nearestDateSearchDays = 90;
     private int holdDurationMinutes = 10;
+    private int orviAdvanceDays = 7;
+    private int bookingPreviewDays = 30;
 
     public int getMinNoticeMinutes() { return minNoticeMinutes; }
     public void setMinNoticeMinutes(int value) { minNoticeMinutes = value; }
@@ -35,4 +37,8 @@ public class SchedulingProperties {
     public void setNearestDateSearchDays(int value) { nearestDateSearchDays = value; }
     public int getHoldDurationMinutes() { return holdDurationMinutes; }
     public void setHoldDurationMinutes(int value) { holdDurationMinutes = value; }
+    public int getOrviAdvanceDays() { return orviAdvanceDays; }
+    public void setOrviAdvanceDays(int value) { orviAdvanceDays = value; }
+    public int getBookingPreviewDays() { return bookingPreviewDays; }
+    public void setBookingPreviewDays(int value) { bookingPreviewDays = value; }
 }

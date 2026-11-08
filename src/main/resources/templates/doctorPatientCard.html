@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('Медкарта пациента', 'doctor-patients', ~{::content})}">
+<body>
+<main th:fragment="content" class="patient-card-page space-y-7">
+    <style>
+        .patient-card-page { --card-ink:#163640; --card-muted:#60777b; --card-line:#dcebe7; --card-mint:#edf8f5; --card-teal:#087f79; --card-deep:#163e48; }
+        .patient-card-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; padding:29px 32px; border-radius:26px; color:#fff; background:var(--card-deep); box-shadow:0 18px 42px rgba(22,62,72,.15); }
+        .patient-card-back { display:inline-flex; margin-bottom:19px; color:#b9ded8; font-size:13px; font-weight:700; text-decoration:none; }
+        .patient-card-back:hover { color:#fff; }
+        .patient-card-hero h1 { margin:0; color:#fff !important; font-size:clamp(2rem,4vw,3rem); line-height:1.06; letter-spacing:-.045em; }
+        .patient-card-hero p { margin:10px 0 0; color:#d3e8e4; font-size:14px; }
+        .patient-avatar-large { display:grid; width:76px; height:76px; flex:none; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:22px; color:#16454c; background:#c8ebe3; font-size:24px; font-weight:800; }
+        .card-layout { display:grid; grid-template-columns:minmax(0,1fr) 310px; gap:18px; align-items:start; }
+        .card-section { padding:23px; border:1px solid var(--card-line); border-radius:21px; background:#fff; box-shadow:0 10px 27px rgba(22,62,72,.05); }
+        .card-section h2 { margin:0; color:var(--card-ink) !important; font-size:20px; letter-spacing:-.03em; }
+        .card-section-intro { margin:6px 0 19px; color:var(--card-muted); font-size:13px; }
+        .visit-timeline { position:relative; display:grid; gap:0; }
+        .visit-timeline::before { content:""; position:absolute; top:22px; bottom:22px; left:10px; width:1px; background:#cfe4df; }
+        .visit-item { position:relative; display:grid; grid-template-columns:22px minmax(0,1fr); gap:14px; padding:0 0 18px; }
+        .visit-item:last-child { padding-bottom:0; }
+        .visit-dot { position:relative; z-index:1; width:21px; height:21px; margin-top:3px; border:5px solid #fff; border-radius:50%; background:var(--card-teal); box-shadow:0 0 0 1px #a9d5ce; }
+        .visit-body { padding:16px 17px; border:1px solid var(--card-line); border-radius:15px; background:#fbfefd; }
+        .visit-top { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:9px; }
+        .visit-date { color:var(--card-ink); font-size:14px; font-weight:800; }
+        .visit-status { padding:5px 9px; border-radius:8px; color:#42716c; background:var(--card-mint); font-size:11px; font-weight:800; }
+        .visit-meta { display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; color:var(--card-muted); font-size:12px; }
+        .visit-complaint { margin:12px 0 0; padding-top:11px; border-top:1px solid #e5f0ed; color:#405c60; font-size:13px; line-height:1.5; }
+        .visit-record { margin-top:13px; padding:15px; border-left:3px solid var(--card-teal); border-radius:0 12px 12px 0; background:#e8f7f4; }
+        .visit-record h4 { margin:0; color:var(--card-ink); font-size:14px; }
+        .visit-record p { margin:8px 0 0; color:#486266; font-size:13px; line-height:1.55; white-space:pre-line; }
+        .visit-record strong { color:var(--card-ink); }
+        .record-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:13px; }
+        .record-action { display:inline-flex; min-height:36px; align-items:center; padding:8px 11px; border:1px solid #bfe0d9; border-radius:9px; color:var(--card-teal); background:#fff; font-size:12px; font-weight:800; text-decoration:none; }
+        .record-action:hover { background:var(--card-mint); }
+        .record-action.primary { color:#fff; background:var(--card-teal); border-color:var(--card-teal); }
+        .prescriptions { display:grid; gap:7px; margin-top:12px; }
+        .prescription { padding:10px 11px; border-radius:9px; background:#fff; color:#486266; font-size:12px; }
+        .prescription strong { display:block; color:var(--card-ink); font-size:13px; }
+        .side-stack { display:grid; gap:18px; }
+        .patient-fact { padding:12px 0; border-bottom:1px solid #e6f1ef; }
+        .patient-fact:last-child { border-bottom:0; }
+        .patient-fact span { display:block; color:var(--card-muted); font-size:12px; }
+        .patient-fact strong { display:block; margin-top:4px; color:var(--card-ink); font-size:14px; }
+        .side-note { padding:15px; border-radius:13px; color:#526d70; background:var(--card-mint); font-size:13px; line-height:1.5; }
+        .empty-records { padding:26px 15px; border:1px dashed #b9d8d2; border-radius:13px; color:var(--card-muted); background:#fbfefd; text-align:center; font-size:13px; }
+        @media (max-width:800px) { .patient-card-hero { padding:24px 21px; } .patient-avatar-large { width:58px; height:58px; border-radius:17px; font-size:18px; } .card-layout { grid-template-columns:1fr; } .card-section { padding:19px 16px; } }
+    </style>
+
+    <section class="patient-card-hero">
+        <div><a th:href="@{/doctor/patients}" class="patient-card-back">← Вернуться к медкартам</a><h1 th:text="${patient.displayName}">Пациент</h1><p>Медицинская карта · история визитов, назначения и рекомендации</p></div>
+        <span class="patient-avatar-large" aria-hidden="true" th:text="${#strings.substring(patient.firstName, 0, 1) + #strings.substring(patient.surname, 0, 1)}">АП</span>
+    </section>
+
+    <div class="card-layout">
+        <section class="card-section">
+            <h2>История приёмов</h2><p class="card-section-intro">Завершённые визиты пациента у вас.</p>
+            <div class="visit-timeline">
+                <article th:each="visit : ${visits}" class="visit-item">
+                    <span class="visit-dot" aria-hidden="true"></span>
+                    <div class="visit-body">
+                        <div class="visit-top"><span class="visit-date" th:text="${visit.appointmentDate != null ? #temporals.format(visit.appointmentDate, 'd MMMM yyyy, HH:mm') : 'Дата не указана'}">10 ноября 2026, 10:00</span><span class="visit-status" th:text="${visit.statusLabel}">Завершена</span></div>
+                        <div class="visit-meta"><span th:if="${visit.doctor != null}" th:text="${'Врач: ' + visit.doctor.displayName}">Врач</span><span th:if="${visit.doctor != null and visit.doctor.specialty != null}" th:text="${visit.doctor.specialty.specialtyName}">Специальность</span><span th:if="${visit.department != null}" th:text="${visit.department.departmentName}">Терапевтическое отделение</span><span th:if="${visit.branch != null}" th:text="${visit.branch.name}">Филиал</span><span th:if="${visit.goal != null}" th:text="${visit.goal.name}">Цель обращения</span></div>
+                        <p th:if="${visit.complaint != null and !visit.complaint.isBlank()}" class="visit-complaint"><strong>Причина обращения:</strong> <span th:text="${visit.complaint}">Жалоба</span></p>
+                        <div th:each="record : ${visit.medicalRecords}" class="visit-record">
+                            <h4 th:text="${record.diagnosis}">Диагноз</h4>
+                            <p th:if="${record.treatment != null and !record.treatment.isBlank()}"><strong>Лечение:</strong> <span th:text="${record.treatment}">Лечение</span></p>
+                            <p th:if="${record.recommendations != null and !record.recommendations.isBlank()}"><strong>Рекомендации:</strong> <span th:text="${record.recommendations}">Рекомендации</span></p>
+                            <div th:if="${record.prescriptions != null and !record.prescriptions.isEmpty()}" class="prescriptions"><div th:each="prescription : ${record.prescriptions}" class="prescription"><strong th:text="${prescription.medicationName}">Название лекарства</strong><span th:text="${(prescription.dosage != null ? prescription.dosage : '') + (prescription.frequency != null ? ' · ' + prescription.frequency : '') + (prescription.durationDays != null ? ' · ' + prescription.durationDays + ' дн.' : '')}">Дозировка</span></div></div>
+                            <div class="record-actions"><a th:href="@{/medicalRecords/{id}/edit(id=${record.idRecord})}" class="record-action">Редактировать итог</a></div>
+                        </div>
+                        <div class="record-actions" th:if="${visit.doctor != null and visit.doctor.idUser == currentDoctorId and visit.status != null and visit.status.equalsIgnoreCase('completed') and (visit.medicalRecords == null or visit.medicalRecords.isEmpty())}"><a th:href="@{/medicalRecords/new(appointmentId=${visit.idAppointment})}" class="record-action primary">Заполнить итог приёма</a></div>
+                    </div>
+                </article>
+            </div>
+            <p th:if="${visits.isEmpty()}" class="empty-records">Завершённых приёмов пока нет.</p>
+        </section>
+
+        <aside class="side-stack">
+            <section class="card-section"><h2>Данные пациента</h2><div class="patient-fact"><span>ФИО</span><strong th:text="${patient.displayName}">Пациент</strong></div><div class="patient-fact" th:if="${patient.birthDate != null}"><span>Дата рождения</span><strong th:text="${#temporals.format(patient.birthDate, 'dd.MM.yyyy')}">01.01.1990</strong></div><div class="patient-fact" th:if="${patient.phone != null and !patient.phone.isBlank()}"><span>Телефон</span><strong th:text="${patient.phone}">Телефон</strong></div><div class="patient-fact" th:if="${patient.policyNumber != null and !patient.policyNumber.isBlank()}"><span>Полис</span><strong th:text="${patient.policyNumber}">Полис</strong></div></section>
+            <section class="card-section"><h2>Как работать с картой</h2><p class="side-note">После завершённого приёма заполните диагноз, лечение и рекомендации. Назначения отображаются внутри соответствующего итога приёма.</p></section>
+        </aside>
+    </div>
+</main>
+</body>
+</html>

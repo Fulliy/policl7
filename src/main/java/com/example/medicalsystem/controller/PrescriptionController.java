@@ -52,8 +52,10 @@ public class PrescriptionController {
     }
 
     @GetMapping("/new")
-    public String showCreateForm(Model model) {
-        model.addAttribute("prescription", new Prescription());
+    public String showCreateForm(@RequestParam(required = false) Integer recordId, Model model) {
+        Prescription prescription = new Prescription();
+        if (recordId != null) prescription.setMedicalRecord(recordService.findById(recordId));
+        model.addAttribute("prescription", prescription);
         model.addAttribute("medicalRecords", recordService.findAll());
         model.addAttribute("services", serviceService.findAll());
         return "prescriptionForm";

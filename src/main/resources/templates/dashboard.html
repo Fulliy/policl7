@@ -37,8 +37,7 @@
                     <span class="w-fit rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${appointment.status}">Запланирован</span>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 hover:bg-clinic-50">Перенести</a>
-                    <button type="button" data-cancel-appointment class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Отменить</button>
+                    <th:block th:if="${appointment.appointmentDate != null and appointment.appointmentDate.isAfter(now) and (appointment.status == 'pending' or appointment.status == 'confirmed')}"><a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 hover:bg-clinic-50">Перенести</a><button type="button" data-cancel-appointment th:attr="data-cancel-url=@{/appointments/{id}/cancel(id=${appointment.idAppointment})}" class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">Отменить</button></th:block>
                 </div>
             </article>
             <p id="dashboard-empty" class="hidden py-8 text-center text-sm text-slate-500">Ближайших записей пока нет.</p>
@@ -49,7 +48,7 @@
                     <p class="text-sm text-slate-500 lg:col-span-2">Терапевтическое отделение</p>
                     <span class="w-fit rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700">Запланирован</span>
                 </div>
-                <div class="flex flex-wrap gap-2"><a href="/appointments/new" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700">Перенести</a><button type="button" data-cancel-appointment class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600">Отменить</button></div>
+                <div th:if="${appointment.appointmentDate != null and appointment.appointmentDate.isAfter(now) and (appointment.status == 'pending' or appointment.status == 'confirmed')}" class="flex flex-wrap gap-2"><a th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700">Перенести</a><button type="button" data-cancel-appointment th:attr="data-cancel-url=@{/appointments/{id}/cancel(id=${appointment.idAppointment})}" class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600">Отменить</button></div>
             </article>
         </div>
     </section>
@@ -63,9 +62,6 @@
             <a th:href="@{/medical-card}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
                 <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">♡</span><h3 class="font-semibold text-ink">Медкарта</h3><p class="mt-1 text-sm text-slate-500">История медицинских записей</p>
             </a>
-            <a th:href="@{/patient/referrals}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
-                <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">↗</span><h3 class="font-semibold text-ink">Направления</h3><p class="mt-1 text-sm text-slate-500">Направления от ваших врачей</p>
-            </a>
             <button type="button" data-coming-soon class="rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-clinic-100">
                 <span class="mb-4 grid h-10 w-10 place-items-center rounded-xl bg-clinic-50 text-clinic-600">＋</span><h3 class="font-semibold text-ink">Справки</h3><p class="mt-1 text-sm text-slate-500">Медицинские справки · Скоро</p>
             </button>
@@ -77,6 +73,13 @@
     <script>
         (() => {
             const rows = [...document.querySelectorAll('.dashboard-appointment')];
+            document.querySelectorAll('[data-cancel-url]').forEach(button => button.addEventListener('click', async () => {
+                if (!confirm('Отменить запись?')) return;
+                const response = await fetch(button.dataset.cancelUrl, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN':document.querySelector('meta[name="_csrf"]')?.content || ''}});
+                if (!response.ok) { alert('Не удалось отменить запись. Обратитесь в регистратуру.'); return; }
+                button.closest('.dashboard-appointment')?.remove();
+                document.dispatchEvent(new CustomEvent('appointment-slots-changed'));
+            }));
             document.querySelectorAll('.dashboard-demo').forEach((row) => { row.hidden = true; });
             const empty = document.getElementById('dashboard-empty');
             if (!rows.length) { empty.classList.remove('hidden'); return; }

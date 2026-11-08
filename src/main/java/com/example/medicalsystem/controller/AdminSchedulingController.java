@@ -89,6 +89,53 @@ public class AdminSchedulingController {
         return new ExceptionCreated(saved.getId(), affected.size());
     }
 
+    @PutMapping("/exceptions/{exceptionId}")
+    @Transactional
+    public ExceptionCreated updateDoctorDates(@PathVariable Integer exceptionId,
+                                               @Valid @RequestBody ScheduleClosureRequest request) {
+        if (request.endDate().isBefore(request.startDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Дата окончания не может быть раньше даты начала.");
+        }
+        DoctorScheduleException exception = exceptionRepository.findById(exceptionId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Исключение расписания не найдено."));
+        Integer oldDoctorId = exception.getDoctor().getIdUser();
+        var doctor = userRepository.findById(request.doctorId()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Врач не найден."));
+        boolean isDoctor = doctor.getRoles() != null && doctor.getRoles().stream().anyMatch(role -> "DOCTOR".equals(role.name()));
+        if (!isDoctor) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Выбранный пользователь не является врачом.");
+        if (oldDoctorId.equals(doctor.getIdUser())) {
+            appointments.lockDoctorScheduleChange(oldDoctorId);
+        } else {
+            appointments.lockDoctorScheduleChange(Math.min(oldDoctorId, doctor.getIdUser()));
+            appointments.lockDoctorScheduleChange(Math.max(oldDoctorId, doctor.getIdUser()));
+        }
+
+        LocalDate oldStart = exception.getStartDate();
+        LocalDate oldEnd = exception.getEndDate();
+        exception.setDoctor(doctor);
+        exception.setStartDate(request.startDate());
+        exception.setEndDate(request.endDate());
+        exception.setType(request.type());
+        exception.setDescription(request.description());
+        exceptionRepository.saveAndFlush(exception);
+
+        List<Appointment> oldAffected = appointmentRepository.findByDoctor_IdUserAndAppointmentDateBetweenAndStatusIn(
+                oldDoctorId, oldStart.atStartOfDay(), oldEnd.plusDays(1).atStartOfDay().minusNanos(1),
+                List.of(AppointmentStatus.pending.name(), AppointmentStatus.confirmed.name()));
+        oldAffected.stream().filter(Appointment::isRequiresReschedule)
+                .filter(item -> exceptionRepository.findByDoctor_IdUserAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                        oldDoctorId, item.getAppointmentDate().toLocalDate(), item.getAppointmentDate().toLocalDate()).isEmpty())
+                .forEach(item -> item.setRequiresReschedule(false));
+
+        List<Appointment> affected = appointmentRepository.findByDoctor_IdUserAndAppointmentDateBetweenAndStatusIn(
+                doctor.getIdUser(), request.startDate().atStartOfDay(), request.endDate().plusDays(1).atStartOfDay().minusNanos(1),
+                List.of(AppointmentStatus.pending.name(), AppointmentStatus.confirmed.name()));
+        affected.forEach(item -> item.setRequiresReschedule(true));
+        appointmentRepository.saveAll(oldAffected);
+        appointmentRepository.saveAll(affected);
+        return new ExceptionCreated(exceptionId, affected.size());
+    }
+
     @DeleteMapping("/exceptions/{exceptionId}")
     @Transactional
     public void reopenDoctorDates(@PathVariable Integer exceptionId) {

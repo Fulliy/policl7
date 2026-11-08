@@ -82,16 +82,15 @@ class AppointmentServiceTest {
     }
 
     @Test
-    void patientAppointmentPeriodsAreFilteredBeforePagination() {
+    void patientAppointmentPeriodsFilterCancelledUpcomingVisits() {
         AppointmentRepository repository = mock(AppointmentRepository.class);
         AppointmentService service = service(repository);
-        Appointment past = new Appointment();
-        past.setAppointmentDate(LocalDateTime.now().minusDays(1));
-        Appointment upcoming = new Appointment();
-        upcoming.setAppointmentDate(LocalDateTime.now().plusDays(1));
-        when(repository.findByUser_IdUser(7)).thenReturn(List.of(past, upcoming));
+        Appointment past = scheduledAppointment(LocalDateTime.now().minusDays(1), "completed");
+        Appointment upcoming = scheduledAppointment(LocalDateTime.now().plusDays(1), "pending");
+        Appointment cancelled = scheduledAppointment(LocalDateTime.now().plusDays(2), "cancelled");
+        when(repository.findByUser_IdUser(7)).thenReturn(List.of(past, upcoming, cancelled));
 
-        assertEquals(List.of(past), service.searchForUser(7, null, null, 1, "past").getContent());
+        assertEquals(List.of(past, cancelled), service.searchForUser(7, null, null, 1, "past").getContent());
         assertEquals(List.of(upcoming), service.searchForUser(7, null, null, 1, "upcoming").getContent());
     }
 
@@ -109,15 +108,28 @@ class AppointmentServiceTest {
     }
 
     @Test
-    void cancellationPersistsStatusAndDoesNotDeleteAppointment() {
+    void patientCancellationDeletesAppointment() {
         AppointmentRepository repository = mock(AppointmentRepository.class);
         AppointmentService service = service(repository);
         Appointment appointment = scheduledAppointment(LocalDateTime.now().plusDays(1), "Запланирован");
         appointment.setIdAppointment(12);
         when(repository.findById(12)).thenReturn(java.util.Optional.of(appointment));
+
+        assertEquals(null, service.cancelByPatient(12));
+        verify(repository).delete(appointment);
+        verify(repository).flush();
+    }
+
+    @Test
+    void staffCancellationPersistsCancelledStatus() {
+        AppointmentRepository repository = mock(AppointmentRepository.class);
+        AppointmentService service = service(repository);
+        Appointment appointment = scheduledAppointment(LocalDateTime.now().plusDays(1), "Запланирован");
+        appointment.setIdAppointment(14);
+        when(repository.findById(14)).thenReturn(java.util.Optional.of(appointment));
         when(repository.saveAndFlush(appointment)).thenReturn(appointment);
 
-        assertEquals("cancelled", service.cancel(12).getStatus());
+        assertEquals("cancelled", service.cancelByStaff(14).getStatus());
         verify(repository).saveAndFlush(appointment);
     }
 
@@ -128,7 +140,26 @@ class AppointmentServiceTest {
         Appointment appointment = scheduledAppointment(LocalDateTime.now().minusDays(1), "Завершен");
         when(repository.findById(13)).thenReturn(java.util.Optional.of(appointment));
 
-        assertThrows(ResponseStatusException.class, () -> service.cancel(13));
+        assertThrows(ResponseStatusException.class, () -> service.cancelByPatient(13));
+    }
+
+    @Test
+    void pastActiveAppointmentsDoNotConsumePatientLimits() {
+        AppointmentRepository repository = mock(AppointmentRepository.class);
+        AppointmentService service = service(repository);
+        User patient = new User(); patient.setIdUser(7);
+        Appointment old = scheduledAppointment(LocalDateTime.now().minusDays(1), "pending"); old.setUser(patient);
+        List<Appointment> existing = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            Appointment appointment = scheduledAppointment(LocalDateTime.now().minusDays(i + 1), "confirmed");
+            appointment.setUser(patient); existing.add(appointment);
+        }
+        when(repository.findByUser_IdUser(7)).thenReturn(existing);
+        Appointment candidate = booking(7, 5, LocalDate.now().plusDays(2).atTime(10, 0));
+        assertFalse(existing.stream().anyMatch(a -> a.getAppointmentDate().isAfter(LocalDateTime.now())));
+        when(repository.saveAndFlush(candidate)).thenReturn(candidate);
+        service.saveBooking(candidate);
+        verify(repository).saveAndFlush(candidate);
     }
 
     @Test
@@ -319,7 +350,7 @@ class AppointmentServiceTest {
         AppointmentService service = service(repository);
         Appointment soon = scheduledAppointment(LocalDateTime.now().plusHours(1), "confirmed");
         when(repository.findById(40)).thenReturn(java.util.Optional.of(soon));
-        ResponseStatusException deadline = assertThrows(ResponseStatusException.class, () -> service.cancel(40));
+        ResponseStatusException deadline = assertThrows(ResponseStatusException.class, () -> service.cancelByPatient(40));
         assertEquals("Отмена возможна только по телефону регистратуры", deadline.getReason());
 
         Appointment cancelled = scheduledAppointment(nextWeekday().atTime(10, 0), "cancelled");
@@ -332,6 +363,23 @@ class AppointmentServiceTest {
                 () -> service.saveBooking(update));
         assertEquals(409, transition.getStatusCode().value());
         assertFalse(AppointmentStatus.cancelled.canTransitionTo(AppointmentStatus.confirmed));
+    }
+
+    @Test
+    void pastAppointmentCannotBeCancelledOrRescheduled() {
+        AppointmentRepository repository = mock(AppointmentRepository.class);
+        AppointmentService service = service(repository);
+        Appointment past = scheduledAppointment(LocalDateTime.now().minusDays(1), "confirmed");
+        past.setIdAppointment(49);
+        when(repository.findById(49)).thenReturn(java.util.Optional.of(past));
+
+        ResponseStatusException cancelError = assertThrows(ResponseStatusException.class, () -> service.cancelByPatient(49));
+        assertEquals("Нельзя отменить прошедший приём.", cancelError.getReason());
+        Appointment update = booking(8, 5, nextWeekday().atTime(10, 0));
+        update.setIdAppointment(49);
+        update.setStatus("confirmed");
+        ResponseStatusException updateError = assertThrows(ResponseStatusException.class, () -> service.saveBooking(update));
+        assertEquals("Нельзя изменить прошедший приём.", updateError.getReason());
     }
 
     private static boolean attemptAfter(CountDownLatch start, AppointmentService service, Appointment value) throws Exception {

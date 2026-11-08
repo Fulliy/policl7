@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('Медкарты пациентов', 'doctor-patients', ~{::content})}">
+<body>
+<main th:fragment="content" class="doctor-records-page space-y-7">
+    <style>
+        .doctor-records-page { --records-ink:#163640; --records-muted:#61777b; --records-line:#dcebe7; --records-mint:#edf8f5; --records-teal:#087f79; }
+        .records-hero { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:24px; align-items:end; padding:30px 34px; border-radius:26px; color:#fff; background:#163e48; box-shadow:0 18px 42px rgba(22,62,72,.15); }
+        .records-hero h1 { margin:0; color:#fff !important; font-size:clamp(2rem,4vw,3rem); line-height:1.05; letter-spacing:-.045em; }
+        .records-hero p { max-width:620px; margin:12px 0 0; color:#d6e9e5; line-height:1.55; }
+        .records-count { min-width:138px; padding:16px; border:1px solid rgba(255,255,255,.18); border-radius:16px; background:rgba(255,255,255,.1); text-align:center; }
+        .records-count strong { display:block; color:#fff; font-size:28px; line-height:1; }
+        .records-count span { display:block; margin-top:7px; color:#b5ddd6; font-size:13px; }
+        .records-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:17px 20px; border:1px solid var(--records-line); border-radius:18px; background:#fff; box-shadow:0 9px 25px rgba(22,62,72,.05); }
+        .records-toolbar h2 { margin:0; color:var(--records-ink) !important; font-size:18px; }
+        .records-toolbar p { margin:4px 0 0; color:var(--records-muted); font-size:13px; }
+        .records-search { min-height:42px; min-width:240px; padding:9px 13px; border:1px solid var(--records-line); border-radius:10px; color:var(--records-ink); background:#fbfefd; font:inherit; }
+        .records-search:focus { outline:3px solid rgba(8,127,121,.18); border-color:var(--records-teal); }
+        .records-list { display:grid; gap:12px; }
+        .record-patient { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:16px; align-items:center; padding:19px 21px; border:1px solid var(--records-line); border-radius:18px; background:#fff; box-shadow:0 8px 22px rgba(22,62,72,.05); transition:border-color .18s,box-shadow .18s,transform .18s; }
+        .record-patient:hover { border-color:#9ccfc6; box-shadow:0 12px 28px rgba(22,62,72,.09); transform:translateY(-1px); }
+        .record-avatar { display:grid; width:49px; height:49px; place-items:center; border-radius:15px; color:var(--records-teal); background:var(--records-mint); font-size:17px; font-weight:800; }
+        .record-patient h3 { margin:0; color:var(--records-ink); font-size:16px; }
+        .record-patient p { margin:5px 0 0; color:var(--records-muted); font-size:13px; }
+        .record-patient-meta { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
+        .record-tag { padding:5px 9px; border-radius:8px; color:#4d7774; background:var(--records-mint); font-size:12px; }
+        .record-open { min-height:42px; padding:10px 14px; border-radius:10px; color:#fff; background:var(--records-teal); font-size:13px; font-weight:800; text-decoration:none; white-space:nowrap; }
+        .record-open:hover { background:#075e5a; }
+        .records-empty { padding:42px 20px; border:1px dashed #b6d8d1; border-radius:18px; color:var(--records-muted); background:#fbfefd; text-align:center; }
+        @media (max-width:700px) { .records-hero { grid-template-columns:1fr; padding:24px 21px; } .records-toolbar { align-items:stretch; flex-direction:column; } .records-search { width:100%; min-width:0; } .record-patient { grid-template-columns:auto minmax(0,1fr); padding:16px; } .record-open { grid-column:1/-1; text-align:center; } }
+        @media (prefers-reduced-motion:reduce) { .record-patient { transition:none; } }
+    </style>
+
+    <section class="records-hero">
+        <div><h1>Медкарты пациентов</h1><p>Открывайте историю визитов, смотрите диагнозы, лечение и рекомендации. Доступны только пациенты, записанные к вам.</p></div>
+        <div class="records-count"><strong th:text="${patients.size()}">0</strong><span>пациентов в работе</span></div>
+    </section>
+
+    <section class="records-toolbar">
+        <div><h2>Ваши пациенты</h2><p>Выберите пациента, чтобы открыть его медкарту.</p></div>
+        <input id="patientSearch" class="records-search" type="search" placeholder="Поиск по ФИО" aria-label="Поиск пациента">
+    </section>
+
+    <section id="patientList" class="records-list">
+        <article th:each="appointment : ${patients}" class="record-patient" data-patient-row th:attr="data-patient-name=${appointment.user.displayName}">
+            <span class="record-avatar" aria-hidden="true" th:text="${#strings.substring(appointment.user.firstName, 0, 1) + #strings.substring(appointment.user.surname, 0, 1)}">АП</span>
+            <div><h3 th:text="${appointment.user.displayName}">ФИО пациента</h3><p>Последний визит: <span th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'd MMMM yyyy, HH:mm') : 'дата уточняется'}">10 ноября 2026, 10:00</span></p><div class="record-patient-meta"><span class="record-tag">История приёмов</span><span class="record-tag" th:if="${appointment.department != null}" th:text="${appointment.department.departmentName}">Отделение</span></div></div>
+            <a th:href="@{/doctor/patients/{id}(id=${appointment.user.idUser})}" class="record-open">Открыть медкарту</a>
+        </article>
+        <p id="noSearchResults" class="records-empty" hidden>Пациент с таким именем не найден.</p>
+        <p th:if="${patients.isEmpty()}" class="records-empty">Пока нет пациентов с завершёнными приёмами.</p>
+    </section>
+
+    <script>
+        (() => { const input = document.getElementById('patientSearch'); const rows = [...document.querySelectorAll('[data-patient-row]')]; const empty = document.getElementById('noSearchResults'); input?.addEventListener('input', () => { const query = input.value.trim().toLowerCase(); let count = 0; rows.forEach(row => { const visible = row.dataset.patientName.toLowerCase().includes(query); row.hidden = !visible; if (visible) count += 1; }); if (empty) empty.hidden = count !== 0 || !query; }); })();
+    </script>
+</main>
+</body>
+</html>

@@ -3,7 +3,6 @@ package com.example.medicalsystem;
 import com.example.medicalsystem.config.CurrentUserAdvice;
 import com.example.medicalsystem.controller.PatientSectionsController;
 import com.example.medicalsystem.model.PatientAffiliation;
-import com.example.medicalsystem.model.PatientReferral;
 import com.example.medicalsystem.model.User;
 import com.example.medicalsystem.service.PatientSectionsService;
 import com.example.medicalsystem.service.UserService;
@@ -23,8 +22,8 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.spring6.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -77,29 +76,9 @@ class PatientSectionsViewTest {
     }
 
     @Test
-    void emptyReferralsPageShowsPatientMessageAndBookingLink() throws Exception {
-        when(sections.referralsForPatient(42)).thenReturn(List.of());
+    void referralsRouteIsDisabled() throws Exception {
         mvc.perform(get("/patient/referrals").principal(patientPrincipal()))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Направлений пока нет")))
-                .andExpect(content().string(containsString("Они появятся здесь, когда врач выдаст вам направление.")))
-                .andExpect(content().string(containsString("href=\"/appointments/new\"")));
-        verify(sections).referralsForPatient(42);
-    }
-
-    @Test
-    void referralsPageRendersItemsWhenPresent() throws Exception {
-        PatientReferral referral = new PatientReferral();
-        referral.setReferralDate(LocalDate.of(2026, 2, 3));
-        referral.setTarget("Ультразвуковое исследование");
-        referral.setIssuedByName("Елена Викторовна Смирнова");
-        referral.setStatus(PatientReferral.ReferralStatus.ACTIVE);
-        when(sections.referralsForPatient(42)).thenReturn(List.of(referral));
-        mvc.perform(get("/patient/referrals").principal(patientPrincipal()))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Ультразвуковое исследование")))
-                .andExpect(content().string(containsString("Елена Викторовна Смирнова")))
-                .andExpect(content().string(not(containsString("Направлений пока нет"))));
+                .andExpect(status().isNotFound());
     }
 
     @Test

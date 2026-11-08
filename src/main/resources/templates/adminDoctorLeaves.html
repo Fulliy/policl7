@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('График отпусков врачей', 'doctor-leaves', ~{::content})}">
+<body><main th:fragment="content" class="space-y-6">
+    <header><p class="text-sm font-semibold text-clinic-700">АДМИНИСТРИРОВАНИЕ</p><h1 class="mt-2 text-3xl font-bold text-ink">График отсутствий врачей</h1><p class="mt-2 text-slate-600">Отпуска, больничные и другие закрытия расписания. Записи на эти даты будут помечены для переноса.</p></header>
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+        <h2 class="text-xl font-bold text-ink">Добавить период</h2>
+        <form id="leave-form" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <input type="hidden" name="exceptionId" value="">
+            <label class="text-sm font-semibold">Врач<select name="doctorId" required class="mt-1 w-full rounded-xl border border-slate-300 p-3"><option value="">Выберите врача</option><option th:each="doctor : ${doctors}" th:value="${doctor.idUser}" th:text="${doctor.displayName}"></option></select></label>
+            <label class="text-sm font-semibold">С даты<input type="date" name="startDate" required class="mt-1 w-full rounded-xl border border-slate-300 p-3"></label>
+            <label class="text-sm font-semibold">По дату<input type="date" name="endDate" required class="mt-1 w-full rounded-xl border border-slate-300 p-3"></label>
+            <label class="text-sm font-semibold">Причина<select name="type" class="mt-1 w-full rounded-xl border border-slate-300 p-3"><option th:each="type : ${exceptionTypes}" th:value="${type}" th:text="${type == T(com.example.medicalsystem.model.DoctorScheduleException.ExceptionType).VACATION ? 'Отпуск' : (type == T(com.example.medicalsystem.model.DoctorScheduleException.ExceptionType).SICK_LEAVE ? 'Больничный' : (type == T(com.example.medicalsystem.model.DoctorScheduleException.ExceptionType).HOLIDAY ? 'Праздник' : 'Выходной'))}"></option></select></label>
+            <label class="text-sm font-semibold">Комментарий<input name="description" maxlength="255" class="mt-1 w-full rounded-xl border border-slate-300 p-3"></label>
+            <button class="rounded-xl bg-clinic-500 px-5 py-3 font-semibold text-white sm:col-span-2 lg:col-span-5" type="submit">Сохранить период</button>
+            <p id="leave-message" class="sm:col-span-2 lg:col-span-5" role="status"></p>
+        </form>
+    </section>
+    <section class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-card"><table class="w-full min-w-[650px] text-left text-sm"><thead class="bg-clinic-50 text-ink"><tr><th class="p-4">Врач</th><th class="p-4">Период</th><th class="p-4">Причина</th><th class="p-4">Комментарий</th><th class="p-4">Действие</th></tr></thead><tbody class="divide-y divide-slate-100"><tr th:each="item : ${exceptions}"><td class="p-4 font-semibold" th:text="${item.doctor.displayName}">Врач</td><td class="p-4" th:text="${item.startDate + ' — ' + item.endDate}">Период</td><td class="p-4" th:text="${item.type}">VACATION</td><td class="p-4" th:text="${item.description}">Комментарий</td><td class="flex gap-2 p-4"><button type="button" class="edit-exception rounded-lg border px-3 py-2 text-clinic-700" th:attr="data-id=${item.id},data-doctor=${item.doctor.idUser},data-start=${item.startDate},data-end=${item.endDate},data-type=${item.type},data-description=${item.description}">Изменить</button><button type="button" class="delete-exception rounded-lg border px-3 py-2 text-clinic-700" th:attr="data-id=${item.id}">Удалить</button></td></tr><tr th:if="${exceptions.isEmpty()}"><td colspan="5" class="p-8 text-center text-slate-600">Периоды отсутствия не заданы.</td></tr></tbody></table></section>
+    <script>
+        const form = document.getElementById('leave-form');
+        const message = document.getElementById('leave-message');
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const formData = Object.fromEntries(new FormData(form));
+            const id = formData.exceptionId;
+            const data = {doctorId: formData.doctorId, startDate: formData.startDate, endDate: formData.endDate, type: formData.type, description: formData.description};
+            const response = await fetch(id ? `/admin/scheduling/exceptions/${id}` : '/admin/scheduling/exceptions', {method: id ? 'PUT' : 'POST', headers: {'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''}, body: JSON.stringify(data)});
+            if (response.ok) { const result = await response.json(); message.textContent = `Период сохранён. Записей требуют переноса: ${result.affectedAppointments}.`; location.reload(); }
+            else message.textContent = 'Не удалось сохранить период. Проверьте даты и выбранного врача.';
+        });
+        document.querySelectorAll('.edit-exception').forEach(button => button.addEventListener('click', () => {
+            form.elements.exceptionId.value = button.dataset.id;
+            form.elements.doctorId.value = button.dataset.doctor;
+            form.elements.startDate.value = button.dataset.start;
+            form.elements.endDate.value = button.dataset.end;
+            form.elements.type.value = button.dataset.type;
+            form.elements.description.value = button.dataset.description || '';
+            form.scrollIntoView({behavior:'smooth', block:'center'});
+            form.querySelector('button[type="submit"]').textContent = 'Сохранить изменения';
+        }));
+        document.querySelectorAll('.delete-exception').forEach(button => button.addEventListener('click', async () => {
+            const response = await fetch(`/admin/scheduling/exceptions/${button.dataset.id}`, {method:'DELETE', headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''}});
+            if (response.ok) location.reload(); else message.textContent = 'Не удалось удалить период.';
+        }));
+    </script>
+</main></body></html>

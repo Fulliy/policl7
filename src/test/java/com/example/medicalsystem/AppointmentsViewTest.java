@@ -92,7 +92,7 @@ class AppointmentsViewTest {
         mvc.perform(get("/appointments").param("searchField", "complaint").param("searchValue", "test")
                         .principal(principal("ADMIN")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("/appointments/7/edit")))
+                .andExpect(content().string(not(containsString("/appointments/7/edit"))))
                 .andExpect(content().string(containsString("&lt;script&gt;alert(1)&lt;/script&gt;")))
                 .andExpect(content().string(containsString("page=2&amp;searchField=complaint&amp;searchValue=test")));
     }
@@ -101,7 +101,8 @@ class AppointmentsViewTest {
     void patientViewHidesAdministrativeAndMutationActions() throws Exception {
         Appointment appointment = new Appointment();
         appointment.setIdAppointment(8);
-        appointment.setStatus("Запланирован");
+        appointment.setStatus("pending");
+        appointment.setAppointmentDate(java.time.LocalDateTime.now().plusDays(2));
         when(appointments.searchForUser(eq(1), any(), any(), anyInt(), any()))
                 .thenReturn(new PageImpl<>(List.of(appointment)));
 
@@ -114,6 +115,21 @@ class AppointmentsViewTest {
                 .andExpect(content().string(containsString("Мои записи")))
                 .andExpect(content().string(not(containsString("#8"))))
                 .andExpect(content().string(not(containsString("По статусу"))));
+    }
+
+    @Test
+    void patientPastVisitDoesNotShowMutationActionsOrPendingLabel() throws Exception {
+        Appointment appointment = new Appointment();
+        appointment.setIdAppointment(9);
+        appointment.setStatus("completed");
+        appointment.setAppointmentDate(java.time.LocalDateTime.now().minusDays(1));
+        when(appointments.searchForUser(eq(1), any(), any(), anyInt(), any()))
+                .thenReturn(new PageImpl<>(List.of(appointment)));
+        mvc.perform(get("/appointments").param("visitPeriod", "past").principal(principal("PATIENT")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("/appointments/9/edit"))))
+                .andExpect(content().string(not(containsString(">Отменить</button>"))))
+                .andExpect(content().string(not(containsString("Ожидает подтверждения"))));
     }
 
     @Test

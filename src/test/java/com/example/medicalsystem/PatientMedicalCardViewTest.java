@@ -88,7 +88,7 @@ class PatientMedicalCardViewTest {
                 .andExpect(content().string(containsString("Она появится автоматически после первого приёма у врача.")))
                 .andExpect(content().string(containsString("href=\"/appointments/new\"")))
                 .andExpect(content().string(containsString("Записаться на приём")))
-                .andExpect(content().string(containsString("href=\"/patient/referrals\"")))
+                .andExpect(content().string(not(containsString("href=\"/patient/referrals\""))))
                 .andExpect(content().string(containsString("href=\"/patient/affiliations\"")));
 
         verify(medicalRecords).findAllForPatient(42);

@@ -12,6 +12,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -25,6 +27,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "users")
@@ -96,12 +99,25 @@ public class User {
     @JoinColumn(name = "id_department")
     private Department department;
 
+    @ManyToMany
+    @JoinTable(name = "doctor_departments", joinColumns = @JoinColumn(name = "id_doctor"),
+            inverseJoinColumns = @JoinColumn(name = "id_department"))
+    private List<Department> doctorDepartments = new ArrayList<>();
+
     @ManyToOne
     @JoinColumn(name = "id_specialty")
     private Specialty specialty;
 
     @OneToMany(mappedBy = "user")
     private List<Appointment> appointments;
+
+    @ManyToMany
+    @JoinTable(name = "doctor_branches", joinColumns = @JoinColumn(name = "id_doctor"),
+            inverseJoinColumns = @JoinColumn(name = "id_branch"))
+    private List<ClinicBranch> branches = new ArrayList<>();
+
+    @Column(name = "on_duty_orvi", nullable = false)
+    private boolean onDutyOrvi;
 
     public Integer getIdUser() {
         return idUser;
@@ -222,6 +238,8 @@ public class User {
     public void setDepartment(Department department) {
         this.department = department;
     }
+    public List<Department> getDoctorDepartments() { return doctorDepartments; }
+    public void setDoctorDepartments(List<Department> doctorDepartments) { this.doctorDepartments = doctorDepartments; }
 
     public Specialty getSpecialty() {
         return specialty;
@@ -238,6 +256,11 @@ public class User {
     public void setAppointments(List<Appointment> appointments) {
         this.appointments = appointments;
     }
+
+    public List<ClinicBranch> getBranches() { return branches; }
+    public void setBranches(List<ClinicBranch> branches) { this.branches = branches; }
+    public boolean isOnDutyOrvi() { return onDutyOrvi; }
+    public void setOnDutyOrvi(boolean onDutyOrvi) { this.onDutyOrvi = onDutyOrvi; }
 
     public String getDisplayName() {
         StringBuilder builder = new StringBuilder();

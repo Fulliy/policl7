@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('Запись на приём', 'new-appointment', ~{::content})}">
+<body>
+<main th:fragment="content" class="booking-page">
+    <style>
+        .booking-page { --booking-ink:#163640; --booking-muted:#60767a; --booking-line:#dcebe7; --booking-mint:#edf8f5; --booking-teal:#087f79; --booking-teal-dark:#075e5a; --booking-gold:#efb85f; max-width:1080px; margin:0 auto; }
+        .booking-hero { position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:28px; align-items:end; overflow:hidden; padding:34px 36px; border-radius:28px; color:#fff; background:#163e48; box-shadow:0 20px 45px rgba(22,62,72,.16); }
+        .booking-hero::after { content:""; position:absolute; right:-70px; bottom:-120px; width:320px; height:320px; border:1px solid rgba(255,255,255,.18); border-radius:50%; box-shadow:0 0 0 28px rgba(255,255,255,.04),0 0 0 58px rgba(255,255,255,.035); pointer-events:none; }
+        .booking-hero-copy, .booking-promise { position:relative; z-index:1; }
+        .booking-kicker { margin:0 0 10px; color:#a9ded4; font-size:13px; font-weight:700; letter-spacing:.04em; }
+        .booking-hero h1 { max-width:650px; margin:0; color:#fff !important; font-size:clamp(2rem,4vw,3.25rem); line-height:1.05; letter-spacing:-.045em; }
+        .booking-hero p:not(.booking-kicker) { max-width:590px; margin:16px 0 0; color:#d4e8e5; font-size:16px; line-height:1.6; }
+        .booking-promise { display:flex; max-width:220px; align-items:center; gap:12px; padding:14px 16px; border:1px solid rgba(255,255,255,.18); border-radius:16px; background:rgba(255,255,255,.10); color:#eaf7f4; font-size:13px; line-height:1.4; }
+        .booking-promise-mark { display:grid; width:34px; height:34px; flex:none; place-items:center; border-radius:50%; color:#163e48; background:#efb85f; font-weight:800; }
+        .booking-flow { margin-top:18px; padding:18px; border:1px solid var(--booking-line); border-radius:22px; background:#fff; box-shadow:0 10px 28px rgba(22,62,72,.06); }
+        .booking-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-width:760px; margin:0 auto; }
+        .booking-step { display:flex; min-width:0; align-items:center; gap:10px; padding:8px 12px; color:#829294; font-size:14px; }
+        .booking-step + .booking-step { border-left:1px solid var(--booking-line); }
+        .booking-step-number { display:grid; width:32px; height:32px; flex:none; place-items:center; border:1px solid #cddedb; border-radius:50%; color:#718486; font-size:13px; font-weight:800; background:#fff; }
+        .booking-step strong { display:block; color:inherit; font-size:14px; font-weight:700; }
+        .booking-step small { display:block; margin-top:2px; color:inherit; font-size:12px; }
+        .booking-step[data-active="true"] { color:var(--booking-teal-dark); }
+        .booking-step[data-active="true"] .booking-step-number { border-color:var(--booking-teal); color:#fff; background:var(--booking-teal); box-shadow:0 0 0 4px #dff2ee; }
+        .booking-step[data-done="true"] .booking-step-number { border-color:#a9d7cf; color:var(--booking-teal-dark); background:var(--booking-mint); }
+        .booking-panel { margin-top:18px; padding:28px; border:1px solid var(--booking-line); border-radius:24px; background:#fff; box-shadow:0 12px 32px rgba(22,62,72,.06); }
+        .booking-panel-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:22px; }
+        .booking-panel-heading h2 { margin:0; color:var(--booking-ink) !important; font-size:24px; line-height:1.2; letter-spacing:-.035em; }
+        .booking-panel-heading p { margin:7px 0 0; color:var(--booking-muted); font-size:15px; }
+        .booking-back { flex:none; min-height:40px; padding:8px 12px; border:1px solid var(--booking-line); border-radius:10px; color:var(--booking-teal-dark); background:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+        .booking-back:hover { border-color:#a7d7d0; background:var(--booking-mint); }
+        .booking-goals { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+        .booking-goal { display:flex; min-height:88px; align-items:center; gap:14px; width:100%; padding:15px; border:1px solid var(--booking-line); border-radius:16px; color:var(--booking-ink); text-align:left; background:#fbfefd; cursor:pointer; transition:background .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease; }
+        .booking-goal:hover { border-color:#91cbc1; background:#f5fcfa; box-shadow:0 8px 20px rgba(22,62,72,.08); transform:translateY(-1px); }
+        .booking-goal:focus-visible, .booking-doctor:focus-visible, .booking-date:focus-visible, .booking-slot:focus-visible { outline:3px solid rgba(8,127,121,.28); outline-offset:2px; }
+        .booking-goal-icon { display:grid; width:44px; height:44px; flex:none; place-items:center; border-radius:13px; color:var(--booking-teal-dark); background:var(--booking-mint); }
+        .booking-goal-icon svg { width:23px; height:23px; }
+        .booking-goal-copy { min-width:0; flex:1; }
+        .booking-goal-copy strong { display:block; font-size:15px; line-height:1.3; }
+        .booking-goal-copy span { display:block; margin-top:4px; color:var(--booking-muted); font-size:13px; line-height:1.35; }
+        .booking-chevron { color:var(--booking-teal); font-size:25px; line-height:1; }
+        .booking-section-label { margin:25px 0 10px; color:var(--booking-ink); font-size:14px; font-weight:800; }
+        .booking-section-label:first-child { margin-top:0; }
+        .booking-hint { margin:16px 0 0; padding:12px 14px; border-left:3px solid var(--booking-gold); color:#657779; background:#fffaf0; font-size:13px; line-height:1.5; }
+        .booking-loading { display:flex; align-items:center; gap:11px; padding:24px 4px; color:var(--booking-muted); }
+        .booking-loading[hidden], .booking-loading.hidden { display:none !important; }
+        .booking-spinner { width:18px; height:18px; border:2px solid #cbe4df; border-top-color:var(--booking-teal); border-radius:50%; animation:booking-spin .8s linear infinite; }
+        @keyframes booking-spin { to { transform:rotate(360deg); } }
+        .booking-doctors { display:grid; gap:10px; }
+        .booking-doctor { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; width:100%; padding:17px 18px; border:1px solid var(--booking-line); border-radius:16px; color:var(--booking-ink); text-align:left; background:#fff; cursor:pointer; transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease; }
+        .booking-doctor:hover { border-color:#91cbc1; background:#f9fdfc; box-shadow:0 8px 20px rgba(22,62,72,.08); transform:translateY(-1px); }
+        .booking-doctor-name { display:block; font-size:16px; font-weight:800; }
+        .booking-doctor-specialty { display:block; margin-top:4px; color:var(--booking-muted); font-size:14px; }
+        .booking-doctor-branches { display:block; margin-top:10px; color:#758789; font-size:13px; }
+        .booking-doctor-next { align-self:center; min-width:120px; padding:9px 11px; border-radius:10px; color:var(--booking-teal-dark); background:var(--booking-mint); font-size:13px; font-weight:800; text-align:center; }
+        .booking-empty { padding:26px 18px; border:1px dashed #b9d8d2; border-radius:15px; color:var(--booking-muted); background:#fbfefd; text-align:center; }
+        .booking-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:22px; }
+        .booking-summary-item { padding:13px 14px; border-radius:13px; background:var(--booking-mint); }
+        .booking-summary-item span { display:block; color:#5f7878; font-size:12px; }
+        .booking-summary-item strong { display:block; margin-top:3px; color:var(--booking-ink); font-size:14px; }
+        .booking-date-label { margin:0 0 10px; color:var(--booking-ink); font-size:14px; font-weight:800; }
+        .booking-dates { display:flex; gap:8px; overflow-x:auto; padding:3px 2px 10px; scrollbar-width:thin; }
+        .booking-date { min-width:100px; padding:11px 12px; border:1px solid var(--booking-line); border-radius:12px; color:var(--booking-ink); background:#fff; cursor:pointer; }
+        .booking-date strong, .booking-date span { display:block; pointer-events:none; }
+        .booking-date strong { font-size:14px; }
+        .booking-date span { margin-top:3px; color:var(--booking-muted); font-size:12px; }
+        .booking-date[data-selected="true"] { border-color:var(--booking-teal); color:#fff; background:var(--booking-teal); box-shadow:0 5px 12px rgba(8,127,121,.18); }
+        .booking-date[data-selected="true"] span { color:#d8f0ec; }
+        .booking-slots-heading { display:flex; justify-content:space-between; gap:12px; margin:20px 0 10px; }
+        .booking-slots-heading h3 { margin:0; color:var(--booking-ink); font-size:14px; }
+        .booking-slots-heading span { color:var(--booking-muted); font-size:13px; }
+        .booking-slots { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+        .booking-slot { min-height:44px; border:1px solid var(--booking-line); border-radius:10px; color:var(--booking-teal-dark); background:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+        .booking-slot:hover, .booking-slot[data-selected="true"] { border-color:var(--booking-teal); color:#fff; background:var(--booking-teal); }
+        .booking-slot-empty { grid-column:1/-1; padding:18px; border-radius:12px; color:var(--booking-muted); background:#f8fbfa; font-size:14px; }
+        .booking-actions { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:25px; padding-top:20px; border-top:1px solid var(--booking-line); }
+        .booking-selection { color:var(--booking-muted); font-size:13px; }
+        .booking-selection strong { color:var(--booking-ink); }
+        .booking-submit { min-width:180px; min-height:48px; padding:12px 18px; border:0; border-radius:12px; color:#fff; background:var(--booking-teal); box-shadow:0 8px 18px rgba(8,127,121,.2); font:inherit; font-size:15px; font-weight:800; cursor:pointer; }
+        .booking-submit:hover:not(:disabled) { background:var(--booking-teal-dark); }
+        .booking-submit:disabled { color:#91a5a5; background:#e4eeec; box-shadow:none; cursor:not-allowed; }
+        .booking-external { padding:22px; border:1px solid #f0dfb8; border-radius:16px; background:#fffaf0; }
+        .booking-external h3 { margin:0; color:var(--booking-ink); font-size:18px; }
+        .booking-external p { margin:8px 0 0; color:#6a7772; line-height:1.55; }
+        .booking-external a { display:inline-flex; margin-top:17px; padding:11px 15px; border-radius:10px; color:#fff; background:var(--booking-teal); font-size:14px; font-weight:800; text-decoration:none; }
+        .booking-alert { margin-top:18px; padding:14px 16px; border:1px solid #efc5c5; border-radius:13px; color:#8e3e46; background:#fff5f4; font-size:14px; line-height:1.5; }
+        .booking-muted-note { margin-top:16px; color:var(--booking-muted); font-size:13px; }
+        @media (max-width:760px) { .booking-hero { grid-template-columns:1fr; padding:26px 22px; } .booking-promise { max-width:none; } .booking-goals { grid-template-columns:1fr; } .booking-panel { padding:20px 16px; } .booking-steps { gap:0; } .booking-step { padding:8px 5px; gap:7px; } .booking-step small { display:none; } .booking-step strong { font-size:12px; } .booking-step-number { width:28px; height:28px; } .booking-doctor { grid-template-columns:1fr; gap:12px; } .booking-doctor-next { justify-self:start; min-width:0; } .booking-summary { grid-template-columns:1fr; } .booking-slots { grid-template-columns:repeat(3,minmax(0,1fr)); } .booking-actions { align-items:stretch; flex-direction:column; } .booking-submit { width:100%; } }
+        @media (prefers-reduced-motion:reduce) { .booking-goal,.booking-doctor { transition:none; } .booking-spinner { animation:none; } }
+    </style>
+
+    <div class="booking-hero">
+        <div class="booking-hero-copy">
+            <p class="booking-kicker">Личный кабинет пациента</p>
+            <h1>Запишитесь на приём без лишних шагов</h1>
+            <p>Выберите причину обращения, врача и свободное время. Данные пациента подставятся автоматически.</p>
+        </div>
+        <div class="booking-promise"><span class="booking-promise-mark">✓</span><span>Обычно запись занимает меньше минуты</span></div>
+    </div>
+
+    <div class="booking-flow">
+        <div class="booking-steps" aria-label="Шаги записи">
+            <div class="booking-step" data-step-marker="1" data-active="true"><span class="booking-step-number">1</span><span><strong>Причина</strong><small>Что вас беспокоит</small></span></div>
+            <div class="booking-step" data-step-marker="2"><span class="booking-step-number">2</span><span><strong>Врач</strong><small>К кому обратиться</small></span></div>
+            <div class="booking-step" data-step-marker="3"><span class="booking-step-number">3</span><span><strong>Время</strong><small>Свободный слот</small></span></div>
+        </div>
+
+        <section id="goalStep" class="booking-panel" aria-labelledby="goalStepTitle">
+            <div class="booking-panel-heading">
+                <div><h2 id="goalStepTitle">С чего начнём?</h2><p>Выберите цель обращения — мы покажем подходящих врачей.</p></div>
+            </div>
+            <p class="booking-section-label">В поликлинику</p>
+            <div id="clinicGoals" class="booking-goals">
+                <button th:each="goal : ${appointmentGoals}" th:if="${goal.goalGroup.name() == 'POLYCLINIC' and !goal.paid}"
+                        type="button" class="booking-goal" data-goal-card
+                        th:attr="data-goal-id=${goal.id},data-goal-name=${goal.name},data-scenario=${goal.scenarioType},data-description=${goal.description},data-external-url=${goal.externalUrl},data-icon=${goal.iconKey}">
+                    <span class="booking-goal-icon" data-icon-slot aria-hidden="true"></span>
+                    <span class="booking-goal-copy"><strong th:text="${goal.name}">Цель обращения</strong><span>Подберём врача и покажем свободное время</span></span>
+                    <span class="booking-chevron" aria-hidden="true">›</span>
+                </button>
+            </div>
+            <p class="booking-section-label">В другой организации</p>
+            <div id="externalGoals" class="booking-goals">
+                <button th:each="goal : ${appointmentGoals}" th:if="${goal.goalGroup.name() == 'OTHER_INSTITUTIONS'}"
+                        type="button" class="booking-goal" data-goal-card
+                        th:attr="data-goal-id=${goal.id},data-goal-name=${goal.name},data-scenario=${goal.scenarioType},data-description=${goal.description},data-external-url=${goal.externalUrl},data-icon=${goal.iconKey}">
+                    <span class="booking-goal-icon" data-icon-slot aria-hidden="true"></span>
+                    <span class="booking-goal-copy"><strong th:text="${goal.name}">Цель обращения</strong><span>Запись проходит через другую организацию</span></span>
+                    <span class="booking-chevron" aria-hidden="true">›</span>
+                </button>
+            </div>
+            <p class="booking-hint">Не уверены, что выбрать? Для обычной консультации подойдут «Плохое самочувствие или боль» или «Симптомы простуды».</p>
+        </section>
+
+        <section id="doctorStep" class="booking-panel" hidden aria-labelledby="doctorStepTitle">
+            <div class="booking-panel-heading">
+                <div><h2 id="doctorStepTitle">Выберите врача</h2><p id="doctorStepSubtitle">Показываем врачей, у которых есть свободное время.</p></div>
+                <button type="button" class="booking-back" data-back-step="1">← Назад</button>
+            </div>
+            <div id="doctorLoading" class="booking-loading"><span class="booking-spinner" aria-hidden="true"></span><span>Ищем доступных врачей…</span></div>
+            <div id="doctorList" class="booking-doctors" hidden></div>
+            <div id="externalPanel" class="booking-external" hidden>
+                <h3 id="externalTitle">Эта запись оформляется отдельно</h3>
+                <p id="externalDescription"></p>
+                <a id="externalLink" href="#" target="_blank" rel="noopener noreferrer" hidden>Перейти к записи</a>
+                <p id="externalSoon" class="booking-muted-note" hidden>Ссылка для записи пока не добавлена. Обратитесь в регистратуру.</p>
+            </div>
+            <div id="doctorEmpty" class="booking-empty" hidden>По этой цели пока нет доступных врачей. Попробуйте другую цель или обратитесь в регистратуру.</div>
+        </section>
+
+        <section id="timeStep" class="booking-panel" hidden aria-labelledby="timeStepTitle">
+            <div class="booking-panel-heading">
+                <div><h2 id="timeStepTitle">Выберите дату и время</h2><p>Останется только подтвердить запись.</p></div>
+                <button type="button" class="booking-back" data-back-step="2">← К врачам</button>
+            </div>
+            <div class="booking-summary">
+                <div class="booking-summary-item"><span>Цель обращения</span><strong id="selectedGoalSummary">—</strong></div>
+                <div class="booking-summary-item"><span>Врач</span><strong id="selectedDoctorSummary">—</strong></div>
+            </div>
+            <p class="booking-date-label">Ближайшие даты</p>
+            <div id="dateChoices" class="booking-dates" role="list" aria-label="Доступные даты"></div>
+            <div class="booking-slots-heading"><h3>Свободное время</h3><span id="slotStatus">Выберите дату</span></div>
+            <div id="slotLoading" class="booking-loading" hidden><span class="booking-spinner" aria-hidden="true"></span><span>Проверяем свободные слоты…</span></div>
+            <div id="slotChoices" class="booking-slots"></div>
+            <div class="booking-actions"><p class="booking-selection" id="selectionSummary">Выберите дату и время приёма.</p><button id="bookingSubmit" type="button" class="booking-submit" disabled>Записаться</button></div>
+        </section>
+
+        <p id="bookingError" class="booking-alert" role="alert" hidden></p>
+    </div>
+
+    <form id="bookingForm" th:action="@{/appointments/save}" method="post" hidden>
+        <input th:if="${_csrf != null}" type="hidden" name="_csrf" th:value="${_csrf.token}">
+        <input type="hidden" name="type" value="DOCTOR_VISIT">
+        <input type="hidden" name="appointmentDate" id="bookingDate">
+        <input type="hidden" name="doctorId" id="bookingDoctorId">
+        <input type="hidden" name="branchId" id="bookingBranchId">
+        <input type="hidden" name="goalId" id="bookingGoalId">
+        <input type="hidden" name="complaint" id="bookingComplaint">
+        <input type="hidden" name="paidConsent" value="false">
+        <input type="hidden" name="departmentId" id="bookingDepartmentId">
+    </form>
+
+    <script th:inline="javascript">
+        (() => {
+            const $ = (id) => document.getElementById(id);
+            const state = { goal: null, doctors: [], doctor: null, branch: null, date: null, time: null, request: 0 };
+            const initialGoalId = /*[[${initialGoalId}]]*/ null;
+            const regularHorizon = /*[[${bookingPreviewDays}]]*/ 30;
+            const orviHorizon = /*[[${orviAdvanceDays}]]*/ 7;
+            const stepViews = { 1: $('goalStep'), 2: $('doctorStep'), 3: $('timeStep') };
+            const iconPaths = {
+                vaccine: 'M8 3v5m8-5v5M6 8h12v13H6z', cold: 'M12 2v20M4 7l16 10M20 7 4 17m4-13 8 16',
+                pain: 'M12 3v18M3 12h18', documents: 'M6 3h9l4 4v14H6zM14 3v5h5',
+                prescription: 'M7 4h10v16H7zM9 9h6m-6 4h6', checkup: 'M4 12h4l2-5 4 10 2-5h4',
+                women: 'M12 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10M12 13v8m-4 0h8',
+                psychologist: 'M5 12a7 7 0 1 1 14 0c0 5-7 9-7 9s-7-4-7-9z',
+                skin: 'M4 4h16v16H4zM8 8h8m-8 4h8', medical: 'M5 4h14v16H5zM8 9h8m-8 4h8'
+            };
+
+            const show = (element) => { if (!element) return; element.hidden = false; element.classList.remove('hidden'); };
+            const hide = (element) => { if (!element) return; element.hidden = true; element.classList.add('hidden'); };
+            const setText = (id, text) => { const element = $(id); if (element) element.textContent = text || ''; };
+            const clearError = () => { const error = $('bookingError'); error.textContent = ''; hide(error); };
+            const showError = (text) => { const error = $('bookingError'); error.textContent = text; show(error); error.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); };
+
+            function setStep(step) {
+                Object.entries(stepViews).forEach(([number, view]) => number === String(step) ? show(view) : hide(view));
+                document.querySelectorAll('[data-step-marker]').forEach((marker) => {
+                    const number = Number(marker.dataset.stepMarker);
+                    marker.dataset.active = String(number === step);
+                    marker.dataset.done = String(number < step);
+                });
+            }
+
+            function drawIcons() {
+                document.querySelectorAll('[data-icon-slot]').forEach((slot) => {
+                    const key = slot.closest('[data-goal-card]')?.dataset.icon;
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none');
+                    svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.7');
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', iconPaths[key] || iconPaths.medical); svg.append(path); slot.append(svg);
+                });
+            }
+
+            async function fetchJson(url) {
+                const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                const raw = await response.text();
+                let data = null;
+                try { data = raw ? JSON.parse(raw) : null; } catch (_) { /* handled below */ }
+                if (!response.ok) {
+                    const statusText = response.status ? ` (HTTP ${response.status})` : '';
+                    throw new Error(data?.message || data?.detail || `Сервер не смог загрузить данные${statusText}.`);
+                }
+                if (data === null) throw new Error('Сервер вернул пустой ответ. Обновите страницу и попробуйте ещё раз.');
+                return data;
+            }
+
+            function dateFromIso(iso, offset) {
+                const parts = iso.split('-').map(Number);
+                const date = new Date(parts[0], parts[1] - 1, parts[2]);
+                date.setDate(date.getDate() + offset);
+                return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+            }
+
+            function dateLabel(iso) {
+                const date = new Date(`${iso}T00:00:00`);
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const diff = Math.round((date - today) / 86400000);
+                if (diff === 0) return 'Сегодня';
+                if (diff === 1) return 'Завтра';
+                return date.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+            }
+
+            function doctorName(doctor) { return doctor?.name || 'Врач'; }
+            function goalName(goal) { return goal?.scenario === 'ORVI_DUTY' ? 'Дежурный врач ОРВИ' : goal?.goalName; }
+
+            function goalFromCard(card) {
+                return { goalId: card.dataset.goalId, goalName: card.dataset.goalName, scenario: card.dataset.scenario,
+                    description: card.dataset.description, externalUrl: card.dataset.externalUrl };
+            }
+
+            function resetDoctorState() {
+                state.doctors = []; state.doctor = null; state.branch = null; state.date = null; state.time = null;
+                $('doctorList').replaceChildren(); $('dateChoices').replaceChildren(); $('slotChoices').replaceChildren();
+                $('bookingSubmit').disabled = true;
+            }
+
+            async function selectGoal(goal) {
+                clearError(); resetDoctorState(); state.goal = goal; $('bookingGoalId').value = goal.goalId;
+                setText('doctorStepSubtitle', `Цель: ${goalName(goal)}. Выберите врача из списка.`); setStep(2);
+                show($('doctorLoading')); hide($('doctorList')); hide($('doctorEmpty')); hide($('externalPanel'));
+                if (goal.scenario === 'EXTERNAL') {
+                    hide($('doctorLoading')); show($('externalPanel')); setText('externalTitle', goalName(goal)); setText('externalDescription', goal.description || 'Для этой цели запись проходит через другую медицинскую организацию.');
+                    const link = $('externalLink'); const soon = $('externalSoon');
+                    if (goal.externalUrl) { link.href = goal.externalUrl; show(link); hide(soon); } else { link.removeAttribute('href'); hide(link); show(soon); }
+                    return;
+                }
+                const request = ++state.request;
+                try {
+                    const doctors = await fetchJson(`/appointments/booking/goals/${encodeURIComponent(goal.goalId)}/doctors`);
+                    if (request !== state.request) return;
+                    state.doctors = Array.isArray(doctors) ? doctors : [];
+                    hide($('doctorLoading')); renderDoctors();
+                } catch (error) {
+                    if (request !== state.request) return;
+                    hide($('doctorLoading')); hide($('doctorList')); show($('doctorEmpty'));
+                    showError(`Не удалось загрузить список врачей: ${error.message}`);
+                }
+            }
+
+            function renderDoctors() {
+                const list = $('doctorList'); list.replaceChildren();
+                if (!state.doctors.length) { show($('doctorEmpty')); hide(list); return; }
+                hide($('doctorEmpty')); show(list);
+                state.doctors.forEach((doctor) => {
+                    const button = document.createElement('button'); button.type = 'button'; button.className = 'booking-doctor';
+                    const copy = document.createElement('span');
+                    const name = document.createElement('strong'); name.className = 'booking-doctor-name'; name.textContent = doctorName(doctor);
+                    const specialty = document.createElement('span'); specialty.className = 'booking-doctor-specialty'; specialty.textContent = doctor.specialty || 'Врач';
+                    const branches = document.createElement('span'); branches.className = 'booking-doctor-branches'; branches.textContent = (doctor.branches || []).map((branch) => `${branch.name} · ${branch.address}`).join('  •  ') || 'Филиал уточняется';
+                    copy.append(name, specialty, branches);
+                    const next = document.createElement('span'); next.className = 'booking-doctor-next'; next.textContent = `Ближайшее: ${dateLabel(doctor.nextDate)}`;
+                    button.append(copy, next); button.addEventListener('click', () => selectDoctor(doctor)); list.append(button);
+                });
+            }
+
+            function selectDoctor(doctor) {
+                clearError(); state.doctor = doctor; state.branch = doctor.branches?.[0] || null; state.date = null; state.time = null;
+                setText('selectedGoalSummary', goalName(state.goal)); setText('selectedDoctorSummary', `${doctorName(doctor)} · ${doctor.specialty || 'Врач'}`);
+                renderDates(doctor); setStep(3); loadSlots(doctor.nextDate);
+            }
+
+            function renderDates(doctor) {
+                const dates = $('dateChoices'); dates.replaceChildren();
+                const horizon = state.goal?.scenario === 'ORVI_DUTY' ? Number(orviHorizon) : Number(regularHorizon);
+                const visibleDays = state.goal?.scenario === 'ORVI_DUTY'
+                    ? Math.min(Number.isFinite(horizon) ? horizon : 7, 7)
+                    : Math.min(Number.isFinite(horizon) ? horizon : 6, 6);
+                for (let offset = 0; offset <= visibleDays; offset += 1) {
+                    const iso = dateFromIso(doctor.nextDate, offset); const button = document.createElement('button');
+                    button.type = 'button'; button.className = 'booking-date'; button.dataset.date = iso; button.dataset.selected = 'false';
+                    const day = document.createElement('strong'); day.textContent = dateLabel(iso);
+                    const full = document.createElement('span'); full.textContent = new Date(`${iso}T00:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+                    button.append(day, full); button.addEventListener('click', () => loadSlots(iso)); dates.append(button);
+                }
+            }
+
+            async function loadSlots(iso) {
+                if (!state.doctor) return; clearError(); state.date = iso; state.time = null; $('bookingSubmit').disabled = true;
+                document.querySelectorAll('.booking-date').forEach((button) => { button.dataset.selected = String(button.dataset.date === iso); });
+                const slots = $('slotChoices'); slots.replaceChildren(); show($('slotLoading')); setText('slotStatus', 'Загрузка…');
+                try {
+                    const data = await fetchJson(`/appointments/availability?doctorId=${encodeURIComponent(state.doctor.id)}&date=${encodeURIComponent(iso)}`);
+                    hide($('slotLoading')); const available = (data?.slots || []).filter((slot) => slot.available);
+                    setText('slotStatus', available.length ? `${available.length} свободных вариантов` : 'Свободного времени нет');
+                    if (!available.length) { const empty = document.createElement('div'); empty.className = 'booking-slot-empty'; empty.textContent = 'На эту дату свободного времени нет. Выберите другой день.'; slots.append(empty); updateSelection(); return; }
+                    available.forEach((slot) => {
+                        const button = document.createElement('button'); button.type = 'button'; button.className = 'booking-slot'; button.dataset.selected = 'false'; button.textContent = slot.time;
+                        button.addEventListener('click', () => { state.time = slot.time; slots.querySelectorAll('.booking-slot').forEach((item) => item.dataset.selected = 'false'); button.dataset.selected = 'true'; updateSelection(); }); slots.append(button);
+                    });
+                } catch (error) { hide($('slotLoading')); setText('slotStatus', 'Не удалось загрузить'); const empty = document.createElement('div'); empty.className = 'booking-slot-empty'; empty.textContent = error.message; slots.append(empty); updateSelection(); }
+            }
+
+            function updateSelection() {
+                const ready = Boolean(state.date && state.time && state.doctor && state.goal && state.goal.scenario !== 'EXTERNAL');
+                $('bookingSubmit').disabled = !ready;
+                setText('selectionSummary', ready ? `${dateLabel(state.date)}, ${state.time}` : 'Выберите дату и время приёма.');
+            }
+
+            function goBack(step) {
+                clearError(); if (step === 1) { state.request += 1; setStep(1); return; }
+                if (step === 2 && state.doctors.length) { setStep(2); return; }
+                setStep(step);
+            }
+
+            $('bookingSubmit').addEventListener('click', () => $('bookingForm').requestSubmit());
+            document.querySelectorAll('[data-back-step]').forEach((button) => button.addEventListener('click', () => goBack(Number(button.dataset.backStep))));
+            document.querySelectorAll('[data-goal-card]').forEach((card) => card.addEventListener('click', () => selectGoal(goalFromCard(card))));
+
+            $('bookingForm').addEventListener('submit', async (event) => {
+                event.preventDefault(); clearError();
+                if (!state.goal || !state.doctor || !state.date || !state.time) { showError('Выберите врача, дату и свободное время.'); return; }
+                $('bookingDate').value = `${state.date}T${state.time}`; $('bookingDoctorId').value = state.doctor.id;
+                $('bookingBranchId').value = state.branch?.id || ''; $('bookingGoalId').value = state.goal.goalId;
+                $('bookingComplaint').value = goalName(state.goal); $('bookingDepartmentId').value = state.doctor.departments?.[0]?.id || '';
+                const submit = $('bookingSubmit'); submit.disabled = true; submit.textContent = 'Сохраняем…';
+                try {
+                    const csrf = document.querySelector('meta[name="_csrf"]')?.content;
+                    const headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }; if (csrf) headers['X-CSRF-TOKEN'] = csrf;
+                    const response = await fetch($('bookingForm').action, { method: 'POST', headers, body: new FormData($('bookingForm')) });
+                    const raw = await response.text(); let data = null; try { data = raw ? JSON.parse(raw) : null; } catch (_) { /* non-JSON response */ }
+                    if (!response.ok) {
+                        const statusText = response.status ? ` (HTTP ${response.status})` : '';
+                        throw new Error(data?.message || data?.detail || `Сервер не смог создать запись${statusText}.`);
+                    }
+                    window.location.assign(data?.redirectUrl || '/appointments');
+                } catch (error) { submit.disabled = false; submit.textContent = 'Записаться'; showError(error.message); }
+            });
+
+            drawIcons(); setStep(1);
+            if (initialGoalId !== null && initialGoalId !== undefined) {
+                const card = [...document.querySelectorAll('[data-goal-card]')].find((item) => String(item.dataset.goalId) === String(initialGoalId));
+                if (card) selectGoal(goalFromCard(card)); else showError('Цель обращения не найдена. Выберите другую цель.');
+            }
+        })();
+    </script>
+</main>
+</body>
+</html>

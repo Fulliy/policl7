@@ -134,6 +134,13 @@ public class AppointmentService {
         AppointmentStatus next = parseStatus(appointment.getStatus());
         Appointment existing = appointment.getIdAppointment() == null ? null : repository.findById(appointment.getIdAppointment()).orElse(null);
         validateStatusTransition(existing, next, administrator);
+        boolean sameAssignedDoctor = appointment.getDoctor() != null && existing != null && existing.getDoctor() != null
+                && appointment.getDoctor().getIdUser().equals(existing.getDoctor().getIdUser());
+        if (existing != null && existing.getAppointmentDate() != null
+                && existing.getAppointmentDate().isBefore(now()) && !administrator && !sameAssignedDoctor) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Нельзя изменить прошедший приём.");
+        }
         appointment.setStatus(next.name());
         if (!administrator) validateRescheduleDeadline(existing, appointment, next);
         if (!administrator) validateAppointmentWindow(appointment.getAppointmentDate(), next.occupiesSlot());
@@ -265,6 +272,10 @@ public class AppointmentService {
         return availability(doctorId, date, durationMinutes, true);
     }
 
+    public SlotAvailability availabilityWithoutNearestDate(Integer doctorId, LocalDate date) {
+        return availability(doctorId, date, scheduling.getDefaultVisitDurationMinutes(), false);
+    }
+
     private SlotAvailability availability(Integer doctorId, LocalDate date, int durationMinutes, boolean findNearest) {
         cleanupExpiredHolds();
         List<SlotDto> values = new ArrayList<>();
@@ -378,8 +389,10 @@ public class AppointmentService {
 
     private void validatePatientLimits(Appointment appointment, Appointment existing, int duration) {
         Integer patientId = appointment.getUser().getIdUser();
+        LocalDateTime current = now();
         List<Appointment> active = repository.findByUser_IdUser(patientId).stream()
                 .filter(AppointmentService::isActive)
+                .filter(a -> a.getAppointmentDate() != null && a.getAppointmentDate().isAfter(current))
                 .filter(a -> isNotExcluded(a, appointment.getIdAppointment())).toList();
         if (active.size() >= scheduling.getMaxActiveTotal()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -509,25 +522,45 @@ public class AppointmentService {
     public record SlotDto(String time, boolean available) { }
     public record SlotAvailability(LocalDate date, boolean available, List<SlotDto> slots, LocalDate nearestDate) { }
 
-    public Appointment cancel(Integer appointmentId) {
+    public Appointment cancelByPatient(Integer appointmentId) {
         Appointment appointment = repository.findById(appointmentId).orElse(null);
-        if (appointment == null) {
-            return null;
-        }
+        if (appointment == null) return null;
         AppointmentStatus current = parseStatus(appointment.getStatus());
-        if (current == AppointmentStatus.completed || current == AppointmentStatus.no_show
-                || current == AppointmentStatus.cancelled) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Этот статус записи нельзя отменить.");
-        }
+        validateCancellableAppointment(appointment, current);
         if (appointment.getAppointmentDate().minusHours(scheduling.getCancellationDeadlineHours()).isBefore(now())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Отмена возможна только по телефону регистратуры");
         }
+        repository.delete(appointment);
+        repository.flush();
+        return null;
+    }
+
+    public Appointment cancelByStaff(Integer appointmentId) {
+        Appointment appointment = repository.findById(appointmentId).orElse(null);
+        if (appointment == null) return null;
+        AppointmentStatus current = parseStatus(appointment.getStatus());
+        validateCancellableAppointment(appointment, current);
+        appointment.setStatus(AppointmentStatus.cancelled.name());
+        return repository.saveAndFlush(appointment);
+    }
+
+    private void validateCancellableAppointment(Appointment appointment, AppointmentStatus current) {
+        if (appointment.getAppointmentDate() != null && appointment.getAppointmentDate().isBefore(now())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Нельзя отменить прошедший приём.");
+        }
+        if (current == AppointmentStatus.completed || current == AppointmentStatus.no_show
+                || current == AppointmentStatus.cancelled) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Этот статус записи нельзя отменить.");
+        }
         if (!current.canTransitionTo(AppointmentStatus.cancelled)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Недопустимый переход статуса записи.");
         }
-        appointment.setStatus(AppointmentStatus.cancelled.name());
-        return repository.saveAndFlush(appointment);
+    }
+
+    /** Совместимость для внутренних вызовов: отмена с правилами пациента. */
+    public Appointment cancel(Integer appointmentId) {
+        return cancelByPatient(appointmentId);
     }
 
     public boolean isDoctorAvailable(Integer doctorId, LocalDateTime appointmentDate, Integer excludeAppointmentId) {
@@ -640,8 +673,9 @@ public class AppointmentService {
                     .toList();
         } else if ("upcoming".equals(visitPeriod)) {
             appointments = appointments.stream()
-                    .filter(appointment -> appointment.getAppointmentDate() == null
-                            || !appointment.getAppointmentDate().isBefore(now))
+                    .filter(appointment -> appointment.getAppointmentDate() != null
+                            && appointment.getAppointmentDate().isAfter(now))
+                    .filter(AppointmentService::isActive)
                     .toList();
         }
         return PaginationHelper.pageFromList(appointments, page);

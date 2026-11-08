@@ -21,13 +21,6 @@ public class PatientSectionsController {
         this.userService = userService;
     }
 
-    @GetMapping("/patient/referrals")
-    public String referrals(@AuthenticationPrincipal UserDetails principal, Model model) {
-        var patient = userService.findByUsername(principal.getUsername());
-        model.addAttribute("referrals", sectionsService.referralsForPatient(patient.getIdUser()));
-        return "patientReferrals";
-    }
-
     @GetMapping("/patient/affiliations")
     public String affiliations(@AuthenticationPrincipal UserDetails principal, Model model) {
         var patient = userService.findByUsername(principal.getUsername());

@@ -40,6 +40,9 @@ public class Department {
     @OneToMany(mappedBy = "department")
     private List<User> users;
 
+    @jakarta.persistence.ManyToMany(mappedBy = "doctorDepartments")
+    private List<User> doctors;
+
     @OneToMany(mappedBy = "department")
     private List<Appointment> appointments;
 
@@ -62,6 +65,8 @@ public class Department {
     public void setRoomNumber(String roomNumber) { this.roomNumber = roomNumber; }
     public List<User> getUsers() { return users; }
     public void setUsers(List<User> users) { this.users = users; }
+    public List<User> getDoctors() { return doctors; }
+    public void setDoctors(List<User> doctors) { this.doctors = doctors; }
     public List<Appointment> getAppointments() { return appointments; }
     public void setAppointments(List<Appointment> appointments) { this.appointments = appointments; }
 }

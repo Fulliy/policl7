@@ -4,13 +4,11 @@ import com.example.medicalsystem.model.Appointment;
 import com.example.medicalsystem.model.AppointmentType;
 import com.example.medicalsystem.model.MedicalRecord;
 import com.example.medicalsystem.model.PatientAffiliation;
-import com.example.medicalsystem.model.PatientReferral;
 import com.example.medicalsystem.model.RoleEnum;
 import com.example.medicalsystem.model.User;
 import com.example.medicalsystem.repository.AppointmentRepository;
 import com.example.medicalsystem.repository.MedicalRecordRepository;
 import com.example.medicalsystem.repository.PatientAffiliationRepository;
-import com.example.medicalsystem.repository.PatientReferralRepository;
 import com.example.medicalsystem.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -33,7 +31,6 @@ public class PatientPortalDemoDataSeeder implements CommandLineRunner {
     private final UserRepository users;
     private final AppointmentRepository appointments;
     private final MedicalRecordRepository medicalRecords;
-    private final PatientReferralRepository referrals;
     private final PatientAffiliationRepository affiliations;
 
     @Value("${app.demo-data.enabled:false}")
@@ -42,12 +39,10 @@ public class PatientPortalDemoDataSeeder implements CommandLineRunner {
     public PatientPortalDemoDataSeeder(UserRepository users,
                                        AppointmentRepository appointments,
                                        MedicalRecordRepository medicalRecords,
-                                       PatientReferralRepository referrals,
                                        PatientAffiliationRepository affiliations) {
         this.users = users;
         this.appointments = appointments;
         this.medicalRecords = medicalRecords;
-        this.referrals = referrals;
         this.affiliations = affiliations;
     }
 
@@ -74,7 +69,6 @@ public class PatientPortalDemoDataSeeder implements CommandLineRunner {
             SeedPlan plan = plans.get(patient.getUsername());
             if (plan != null && !patient.getIdUser().equals(emptyPatient.getIdUser())) {
                 seedMedicalHistory(patient);
-                plan.referrals().forEach(value -> seedReferral(patient, value));
                 plan.affiliations().forEach(value -> seedAffiliation(patient, value));
             }
         }
@@ -84,7 +78,6 @@ public class PatientPortalDemoDataSeeder implements CommandLineRunner {
     private boolean hasNoPortalData(User patient) {
         Integer patientId = patient.getIdUser();
         return medicalRecords.findAllForPatient(patientId).isEmpty()
-                && referrals.findByPatient_IdUserOrderByReferralDateDesc(patientId).isEmpty()
                 && affiliations.findByPatient_IdUserOrderByAttachedAtDesc(patientId).isEmpty();
     }
 
@@ -122,18 +115,6 @@ public class PatientPortalDemoDataSeeder implements CommandLineRunner {
         medicalRecords.save(record);
     }
 
-    private void seedReferral(User patient, ReferralSeed seed) {
-        if (referrals.existsByPatient_IdUserAndReferralDateAndTargetAndIssuedByName(
-                patient.getIdUser(), seed.date(), seed.target(), seed.doctor())) return;
-        PatientReferral referral = new PatientReferral();
-        referral.setPatient(patient);
-        referral.setReferralDate(seed.date());
-        referral.setTarget(seed.target());
-        referral.setIssuedByName(seed.doctor());
-        referral.setStatus(seed.status());
-        referrals.save(referral);
-    }
-
     private void seedAffiliation(User patient, AffiliationSeed seed) {
         if (affiliations.existsByPatient_IdUserAndMedicalCenterNameAndDoctorNameAndAttachedAt(
                 patient.getIdUser(), seed.center(), seed.doctor(), seed.date())) return;
@@ -148,29 +129,14 @@ public class PatientPortalDemoDataSeeder implements CommandLineRunner {
 
     private Map<String, SeedPlan> demoPlans() {
         return Map.of(
-                "patient", new SeedPlan(
-                        List.of(
-                                new ReferralSeed(LocalDate.of(2026, 1, 15), "Консультация врача-кардиолога", "Елена Викторовна Смирнова", PatientReferral.ReferralStatus.ACTIVE),
-                                new ReferralSeed(LocalDate.of(2026, 2, 3), "Электрокардиография", "Елена Викторовна Смирнова", PatientReferral.ReferralStatus.COMPLETED)),
-                        List.of(new AffiliationSeed("Медцентр «Забота», терапевтическое отделение", "Алексей Сергеевич Миронов", LocalDate.of(2025, 3, 12), PatientAffiliation.AffiliationStatus.ACTIVE))),
-                "user4", new SeedPlan(
-                        List.of(
-                                new ReferralSeed(LocalDate.of(2026, 1, 20), "Консультация врача-невролога", "Ирина Павловна Лебедева", PatientReferral.ReferralStatus.ACTIVE),
-                                new ReferralSeed(LocalDate.of(2026, 2, 11), "Магнитно-резонансная томография", "Ирина Павловна Лебедева", PatientReferral.ReferralStatus.ACTIVE),
-                                new ReferralSeed(LocalDate.of(2026, 3, 2), "Повторная консультация невролога", "Ирина Павловна Лебедева", PatientReferral.ReferralStatus.COMPLETED)),
-                        List.of(
+                "patient", new SeedPlan(List.of(new AffiliationSeed("Медцентр «Забота», терапевтическое отделение", "Алексей Сергеевич Миронов", LocalDate.of(2025, 3, 12), PatientAffiliation.AffiliationStatus.ACTIVE))),
+                "user4", new SeedPlan(List.of(
                                 new AffiliationSeed("Медцентр «Забота», филиал на Лесной", "Ирина Павловна Лебедева", LocalDate.of(2025, 5, 8), PatientAffiliation.AffiliationStatus.ACTIVE),
                                 new AffiliationSeed("Центр семейной медицины «Ромашка»", "Мария Андреевна Волкова", LocalDate.of(2025, 8, 21), PatientAffiliation.AffiliationStatus.ENDED))),
-                "user5", new SeedPlan(
-                        List.of(
-                                new ReferralSeed(LocalDate.of(2026, 1, 28), "Ультразвуковое исследование", "Дмитрий Олегович Соколов", PatientReferral.ReferralStatus.ACTIVE),
-                                new ReferralSeed(LocalDate.of(2026, 2, 19), "Консультация врача-терапевта", "Дмитрий Олегович Соколов", PatientReferral.ReferralStatus.ACTIVE)),
-                        List.of(new AffiliationSeed("Медцентр «Забота», терапевтическое отделение", "Дмитрий Олегович Соколов", LocalDate.of(2025, 6, 17), PatientAffiliation.AffiliationStatus.ACTIVE))));
+                "user5", new SeedPlan(List.of(new AffiliationSeed("Медцентр «Забота», терапевтическое отделение", "Дмитрий Олегович Соколов", LocalDate.of(2025, 6, 17), PatientAffiliation.AffiliationStatus.ACTIVE))));
     }
 
-    private record SeedPlan(List<ReferralSeed> referrals, List<AffiliationSeed> affiliations) { }
-    private record ReferralSeed(LocalDate date, String target, String doctor,
-                                PatientReferral.ReferralStatus status) { }
+    private record SeedPlan(List<AffiliationSeed> affiliations) { }
     private record AffiliationSeed(String center, String doctor, LocalDate date,
                                    PatientAffiliation.AffiliationStatus status) { }
 }
