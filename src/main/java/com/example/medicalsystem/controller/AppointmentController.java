@@ -117,7 +117,8 @@ public class AppointmentController {
             appointment.setStatus("pending");
             if (goalRepository != null && branchRepository != null && specialtyRepository != null) {
                 model.addAttribute("appointmentGoals", goalRepository.findByActiveTrueOrderBySortOrderAscNameAsc().stream()
-                        .filter(goal -> !goal.isPaid()).toList());
+                        .filter(goal -> !goal.isPaid())
+                        .filter(goal -> !"Единое окно".equalsIgnoreCase(goal.getName())).toList());
                 model.addAttribute("bookingSpecialties", specialtyRepository.findAll());
                 model.addAttribute("services", serviceEntityService.findAll());
                 model.addAttribute("isPatientOnly", true);
@@ -147,7 +148,8 @@ public class AppointmentController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Каталог целей записи недоступен.");
         }
         model.addAttribute("appointmentGoals", goalRepository.findByActiveTrueOrderBySortOrderAscNameAsc().stream()
-                .filter(item -> !item.isPaid()).toList());
+                .filter(item -> !item.isPaid())
+                .filter(item -> !"Единое окно".equalsIgnoreCase(item.getName())).toList());
         model.addAttribute("services", serviceEntityService.findAll());
         model.addAttribute("isPatientOnly", true);
         model.addAttribute("patient", userService.findByUsername(principal.getUsername()));
@@ -214,6 +216,41 @@ public class AppointmentController {
         return "redirect:/appointments";
     }
 
+    @GetMapping("/{id}/reschedule")
+    @PreAuthorize("hasAuthority('PATIENT')")
+    public String showRescheduleForm(@PathVariable Integer id, Model model,
+                                     @AuthenticationPrincipal UserDetails principal) {
+        Appointment appointment = appointmentService.findById(id);
+        ensureOwnerOrStaff(appointment, principal);
+        ensurePatientCanModify(appointment, principal);
+        if (appointment.getDoctor() == null || appointment.getType() == AppointmentType.SERVICE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Перенос через календарь доступен только для приёма у врача. Для переноса услуги обратитесь в регистратуру.");
+        }
+        model.addAttribute("appointment", appointment);
+        model.addAttribute("now", LocalDateTime.now(ZoneId.of("Europe/Moscow")));
+        model.addAttribute("bookingPreviewDays", schedulingProperties == null ? 30 : schedulingProperties.getBookingPreviewDays());
+        model.addAttribute("rescheduleDeadlineHours", schedulingProperties == null ? 24 : schedulingProperties.getCancellationDeadlineHours());
+        return "patientReschedule";
+    }
+
+    @PostMapping("/{id}/reschedule")
+    @ResponseBody
+    @PreAuthorize("hasAuthority('PATIENT')")
+    public Object reschedule(@PathVariable Integer id,
+                             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime appointmentDate,
+                             @AuthenticationPrincipal UserDetails principal) {
+        Appointment existing = appointmentService.findById(id);
+        ensureOwnerOrStaff(existing, principal);
+        ensurePatientCanModify(existing, principal);
+        if (existing.getDoctor() == null || existing.getType() == AppointmentType.SERVICE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Эту запись нельзя перенести через календарь.");
+        }
+        com.example.medicalsystem.model.User patient = userService.findByUsername(principal.getUsername());
+        appointmentService.reschedulePatientAppointment(id, patient.getIdUser(), appointmentDate);
+        return java.util.Map.of("message", "Запись перенесена.", "redirectUrl", "/appointments");
+    }
+
     @GetMapping("/{id}/edit")
     public String showEditForm(@PathVariable Integer id, Model model,
                                @AuthenticationPrincipal UserDetails principal) {
@@ -266,6 +303,18 @@ public class AppointmentController {
         }
         appointmentService.saveBooking(appointment, null, hasAuthority(principal, "ADMIN"), false);
         return "redirect:/appointments";
+    }
+
+    @PostMapping("/{id}/complete")
+    public String complete(@PathVariable Integer id, @AuthenticationPrincipal UserDetails principal) {
+        if (!hasAuthority(principal, "DOCTOR")) {
+            throw new AccessDeniedException("Завершить приём может только лечащий врач.");
+        }
+        Appointment appointment = appointmentService.findById(id);
+        ensureDoctorOwnsAppointment(appointment, principal);
+        User doctor = userService.findByUsername(principal.getUsername());
+        appointmentService.completeDoctorVisit(id, doctor.getIdUser());
+        return "redirect:/doctor/patients/" + appointment.getUser().getIdUser() + "?appointmentId=" + id;
     }
 
     @PostMapping("/{id}/delete")

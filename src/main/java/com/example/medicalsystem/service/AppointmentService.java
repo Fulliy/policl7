@@ -54,6 +54,9 @@ public class AppointmentService {
     @Value("${app.demo-data.enabled:false}")
     private boolean demoDataEnabled;
 
+    @Value("${app.demo-data.reset:false}")
+    private boolean demoDataReset;
+
     @Autowired
     public AppointmentService(AppointmentRepository repository, UserRepository userRepository,
                               DepartmentRepository departmentRepository,
@@ -94,7 +97,7 @@ public class AppointmentService {
 
     @PostConstruct
     public void init() {
-        if (!demoDataEnabled) {
+        if (!demoDataEnabled || demoDataReset) {
             return;
         }
         long count = repository.count();
@@ -243,6 +246,62 @@ public class AppointmentService {
 
     public HoldResult reserveSlot(Integer patientId, Integer doctorId, LocalDateTime start) {
         return reserveSlot(patientId, doctorId, start, scheduling.getDefaultVisitDurationMinutes());
+    }
+
+    public Appointment reschedulePatientAppointment(Integer appointmentId, Integer patientId, LocalDateTime newDate) {
+        Appointment existing = repository.findById(appointmentId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Запись не найдена."));
+        if (existing.getUser() == null || !java.util.Objects.equals(existing.getUser().getIdUser(), patientId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Эта запись принадлежит другому пациенту.");
+        }
+        AppointmentStatus status = parseStatus(existing.getStatus());
+        if (!status.occupiesSlot() || existing.getAppointmentDate() == null
+                || !existing.getAppointmentDate().isAfter(now())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Перенести можно только предстоящую активную запись.");
+        }
+        Appointment proposed = copyWithDate(existing, newDate);
+        validateRescheduleDeadline(existing, proposed, status);
+        if (existing.getDoctor() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "У этой записи не указан врач; обратитесь в регистратуру.");
+        }
+        if (existing.getGoal() != null && existing.getGoal().getScenarioType() == com.example.medicalsystem.model.AppointmentGoal.ScenarioType.ORVI_DUTY
+                && newDate.isAfter(now().plusDays(Math.min(scheduling.getOrviAdvanceDays(), 7)))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Для дежурного врача ОРВИ перенос доступен только в пределах ближайших 7 дней.");
+        }
+        existing.setAppointmentDate(newDate);
+        existing.setRequiresReschedule(false);
+        return saveBooking(existing, null, false, false);
+    }
+
+    private Appointment copyWithDate(Appointment existing, LocalDateTime date) {
+        Appointment updated = new Appointment();
+        updated.setIdAppointment(existing.getIdAppointment());
+        updated.setUser(existing.getUser());
+        updated.setDoctor(existing.getDoctor());
+        updated.setAppointmentDate(date);
+        updated.setStatus(existing.getStatus());
+        updated.setType(existing.getType());
+        updated.setDurationMinutes(existing.getDurationMinutes());
+        return updated;
+    }
+
+    public Appointment completeDoctorVisit(Integer appointmentId, Integer doctorId) {
+        Appointment appointment = repository.findById(appointmentId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Приём не найден."));
+        if (appointment.getDoctor() == null || !java.util.Objects.equals(appointment.getDoctor().getIdUser(), doctorId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Завершить можно только собственный приём.");
+        }
+        if (appointment.getAppointmentDate() == null || appointment.getAppointmentDate().isAfter(now())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Завершить приём можно после назначенного времени.");
+        }
+        AppointmentStatus status = parseStatus(appointment.getStatus());
+        if (status == AppointmentStatus.completed) return appointment;
+        if (!status.occupiesSlot()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Эту запись нельзя завершить.");
+        }
+        appointment.setStatus(AppointmentStatus.completed.name());
+        return repository.saveAndFlush(appointment);
     }
 
     public Appointment saveAdminRescheduled(Appointment appointment) {

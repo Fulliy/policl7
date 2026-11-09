@@ -52,9 +52,21 @@
         <span class="patient-avatar-large" aria-hidden="true" th:text="${#strings.substring(patient.firstName, 0, 1) + #strings.substring(patient.surname, 0, 1)}">АП</span>
     </section>
 
+    <section th:if="${selectedVisit != null}" class="card-section" style="margin-bottom:18px;border-color:#acd8d0;background:#f7fcfa">
+        <h2>Приём из расписания</h2>
+        <p class="card-section-intro" th:text="${#temporals.format(selectedVisit.appointmentDate, 'd MMMM yyyy, HH:mm') + ' · ' + selectedVisit.statusLabel}">Сегодняшний приём</p>
+        <p class="side-note" th:if="${selectedVisit.appointmentDate != null and selectedVisit.appointmentDate.isAfter(now)}">Время приёма ещё не наступило. Карта доступна для просмотра, а заполнение медицинского итога откроется после назначенного времени.</p>
+        <div class="record-actions">
+            <form th:if="${selectedVisit.appointmentDate != null and !selectedVisit.appointmentDate.isAfter(now) and (selectedVisit.status == 'pending' or selectedVisit.status == 'confirmed')}" th:action="@{/appointments/{id}/complete(id=${selectedVisit.idAppointment})}" method="post"><input th:if="${_csrf != null}" type="hidden" name="_csrf" th:value="${_csrf.token}"><button type="submit" class="record-action primary">Завершить приём и открыть итог</button></form>
+            <a th:if="${selectedVisit.appointmentDate != null and !selectedVisit.appointmentDate.isAfter(now) and (selectedVisit.medicalRecords == null or selectedVisit.medicalRecords.isEmpty()) and selectedVisit.status == 'completed'}" th:href="@{/medicalRecords/new(appointmentId=${selectedVisit.idAppointment})}" class="record-action primary">Заполнить итог этого приёма</a>
+            <a th:if="${selectedVisit.status == 'completed'}" th:each="record : ${selectedVisit.medicalRecords}" th:href="@{/medicalRecords/{id}/edit(id=${record.idRecord})}" class="record-action primary">Обновить медицинский итог</a>
+            <a th:href="@{/appointments/{id}/edit(id=${selectedVisit.idAppointment})}" class="record-action">Открыть детали приёма</a>
+        </div>
+    </section>
+
     <div class="card-layout">
         <section class="card-section">
-            <h2>История приёмов</h2><p class="card-section-intro">Завершённые визиты пациента у вас.</p>
+            <h2>История приёмов</h2><p class="card-section-intro">Все прошлые визиты пациента и их медицинские итоги.</p>
             <div class="visit-timeline">
                 <article th:each="visit : ${visits}" class="visit-item">
                     <span class="visit-dot" aria-hidden="true"></span>
@@ -67,7 +79,7 @@
                             <p th:if="${record.treatment != null and !record.treatment.isBlank()}"><strong>Лечение:</strong> <span th:text="${record.treatment}">Лечение</span></p>
                             <p th:if="${record.recommendations != null and !record.recommendations.isBlank()}"><strong>Рекомендации:</strong> <span th:text="${record.recommendations}">Рекомендации</span></p>
                             <div th:if="${record.prescriptions != null and !record.prescriptions.isEmpty()}" class="prescriptions"><div th:each="prescription : ${record.prescriptions}" class="prescription"><strong th:text="${prescription.medicationName}">Название лекарства</strong><span th:text="${(prescription.dosage != null ? prescription.dosage : '') + (prescription.frequency != null ? ' · ' + prescription.frequency : '') + (prescription.durationDays != null ? ' · ' + prescription.durationDays + ' дн.' : '')}">Дозировка</span></div></div>
-                            <div class="record-actions"><a th:href="@{/medicalRecords/{id}/edit(id=${record.idRecord})}" class="record-action">Редактировать итог</a></div>
+                            <div class="record-actions" th:if="${visit.doctor != null and visit.doctor.idUser == currentDoctorId and visit.status != null and visit.status.equalsIgnoreCase('completed')}"><a th:href="@{/medicalRecords/{id}/edit(id=${record.idRecord})}" class="record-action">Редактировать итог</a></div>
                         </div>
                         <div class="record-actions" th:if="${visit.doctor != null and visit.doctor.idUser == currentDoctorId and visit.status != null and visit.status.equalsIgnoreCase('completed') and (visit.medicalRecords == null or visit.medicalRecords.isEmpty())}"><a th:href="@{/medicalRecords/new(appointmentId=${visit.idAppointment})}" class="record-action primary">Заполнить итог приёма</a></div>
                     </div>

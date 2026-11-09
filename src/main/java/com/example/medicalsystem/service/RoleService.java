@@ -22,6 +22,9 @@ public class RoleService {
     @Value("${app.demo-data.enabled:false}")
     private boolean demoDataEnabled;
 
+    @Value("${app.demo-data.reset:false}")
+    private boolean demoDataReset;
+
     public RoleService(RoleRepository repository,
                        SpecialtyRepository specialtyRepository) {
         this.repository = repository;
@@ -30,7 +33,7 @@ public class RoleService {
 
     @PostConstruct
     public void init() {
-        if (!demoDataEnabled) {
+        if (!demoDataEnabled || demoDataReset) {
             return;
         }
         long count = repository.count();

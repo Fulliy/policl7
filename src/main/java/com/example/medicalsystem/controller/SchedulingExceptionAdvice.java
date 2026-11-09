@@ -19,6 +19,8 @@ public class SchedulingExceptionAdvice {
         String message = exception.getReason() == null ? "Не удалось выполнить операцию." : exception.getReason();
         if (request.getRequestURI().startsWith("/api/")
                 || request.getRequestURI().startsWith("/admin/scheduling/")
+                || request.getRequestURI().startsWith("/admin/patient-affiliations")
+                || request.getRequestURI().startsWith("/appointments") && "XMLHttpRequest".equals(request.getHeader("X-Requested-With"))
                 || (request.getContentType() != null && request.getContentType().contains("application/json"))) {
             return ResponseEntity.status(status).body(Map.of("message", message));
         }

@@ -26,6 +26,8 @@
         .record-tag { padding:5px 9px; border-radius:8px; color:#4d7774; background:var(--records-mint); font-size:12px; }
         .record-open { min-height:42px; padding:10px 14px; border-radius:10px; color:#fff; background:var(--records-teal); font-size:13px; font-weight:800; text-decoration:none; white-space:nowrap; }
         .record-open:hover { background:#075e5a; }
+        .patient-latest-result{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:5px 9px;border-radius:8px;color:#557477;background:#f1f8f6;font-size:12px}
+        .patient-latest-result.done{color:#08716d;background:#e8f7f4}
         .records-empty { padding:42px 20px; border:1px dashed #b6d8d1; border-radius:18px; color:var(--records-muted); background:#fbfefd; text-align:center; }
         @media (max-width:700px) { .records-hero { grid-template-columns:1fr; padding:24px 21px; } .records-toolbar { align-items:stretch; flex-direction:column; } .records-search { width:100%; min-width:0; } .record-patient { grid-template-columns:auto minmax(0,1fr); padding:16px; } .record-open { grid-column:1/-1; text-align:center; } }
         @media (prefers-reduced-motion:reduce) { .record-patient { transition:none; } }
@@ -37,18 +39,18 @@
     </section>
 
     <section class="records-toolbar">
-        <div><h2>Ваши пациенты</h2><p>Выберите пациента, чтобы открыть его медкарту.</p></div>
+        <div><h2>Ваши пациенты</h2><p>История визитов, текущие записи и готовность медицинских итогов.</p></div>
         <input id="patientSearch" class="records-search" type="search" placeholder="Поиск по ФИО" aria-label="Поиск пациента">
     </section>
 
     <section id="patientList" class="records-list">
         <article th:each="appointment : ${patients}" class="record-patient" data-patient-row th:attr="data-patient-name=${appointment.user.displayName}">
             <span class="record-avatar" aria-hidden="true" th:text="${#strings.substring(appointment.user.firstName, 0, 1) + #strings.substring(appointment.user.surname, 0, 1)}">АП</span>
-            <div><h3 th:text="${appointment.user.displayName}">ФИО пациента</h3><p>Последний визит: <span th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'd MMMM yyyy, HH:mm') : 'дата уточняется'}">10 ноября 2026, 10:00</span></p><div class="record-patient-meta"><span class="record-tag">История приёмов</span><span class="record-tag" th:if="${appointment.department != null}" th:text="${appointment.department.departmentName}">Отделение</span></div></div>
-            <a th:href="@{/doctor/patients/{id}(id=${appointment.user.idUser})}" class="record-open">Открыть медкарту</a>
+            <div><h3 th:text="${appointment.user.displayName}">ФИО пациента</h3><p>Последний визит: <span th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate, 'd MMMM yyyy, HH:mm') : 'дата уточняется'}">10 ноября 2026, 10:00</span></p><div class="record-patient-meta"><span class="record-tag">История приёмов</span><span class="record-tag" th:if="${appointment.department != null}" th:text="${appointment.department.departmentName}">Отделение</span></div><span th:if="${appointment.appointmentDate != null and !appointment.appointmentDate.isAfter(now)}" th:classappend="${appointment.medicalRecords != null and !appointment.medicalRecords.isEmpty() ? ' done' : ''}" class="patient-latest-result" th:text="${appointment.medicalRecords != null and !appointment.medicalRecords.isEmpty() ? 'Медицинский итог заполнен' : 'Ожидает заполнения итога'}">Медицинский итог</span></div>
+            <a th:href="@{/doctor/patients/{id}(id=${appointment.user.idUser},appointmentId=${appointment.idAppointment})}" class="record-open">Открыть медкарту</a>
         </article>
         <p id="noSearchResults" class="records-empty" hidden>Пациент с таким именем не найден.</p>
-        <p th:if="${patients.isEmpty()}" class="records-empty">Пока нет пациентов с завершёнными приёмами.</p>
+        <p th:if="${patients.isEmpty()}" class="records-empty">Пока нет пациентов с активными или прошедшими записями к вам.</p>
     </section>
 
     <script>

@@ -17,6 +17,8 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, In
     // Поиск по приему
     List<MedicalRecord> findByAppointment_IdAppointment(Integer idAppointment);
 
+    List<MedicalRecord> findByAppointment_IdAppointmentIn(List<Integer> appointmentIds);
+
     @Query("SELECT record FROM MedicalRecord record WHERE record.appointment.user.idUser = :patientId " +
             "AND record.appointment.status = 'completed' " +
             "ORDER BY record.createdDate DESC")

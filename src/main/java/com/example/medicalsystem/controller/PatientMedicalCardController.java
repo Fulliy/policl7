@@ -35,13 +35,17 @@ public class PatientMedicalCardController {
     @GetMapping
     public String show(@AuthenticationPrincipal UserDetails principal, Model model) {
         var patient = userService.findByUsername(principal.getUsername());
-        model.addAttribute("medicalRecords", medicalRecordService.findAllForPatient(patient.getIdUser()));
-        model.addAttribute("pastVisits", appointmentService == null ? java.util.List.of() : appointmentService.findByUser(patient.getIdUser()).stream()
+        var pastVisits = appointmentService == null ? java.util.List.<com.example.medicalsystem.model.Appointment>of() : appointmentService.findByUser(patient.getIdUser()).stream()
                 .filter(visit -> visit.getAppointmentDate() != null
                         && visit.getAppointmentDate().isBefore(java.time.LocalDateTime.now(java.time.ZoneId.of("Europe/Moscow")))
                         && "completed".equalsIgnoreCase(visit.getStatus()))
                 .sorted(java.util.Comparator.comparing(com.example.medicalsystem.model.Appointment::getAppointmentDate).reversed())
-                .toList());
+                .toList();
+        var doctorGroups = pastVisits.stream().filter(visit -> visit.getDoctor() != null)
+                .collect(java.util.stream.Collectors.groupingBy(visit -> visit.getDoctor().getDisplayName(), java.util.LinkedHashMap::new, java.util.stream.Collectors.toList()));
+        model.addAttribute("medicalRecords", medicalRecordService.findAllForPatient(patient.getIdUser()));
+        model.addAttribute("pastVisits", pastVisits);
+        model.addAttribute("doctorGroups", doctorGroups);
         return "patientMedicalCard";
     }
 }

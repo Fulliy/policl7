@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('Перенос записи', 'appointments', ~{::content})}">
+<body>
+<main th:fragment="content" class="reschedule-page">
+    <style>
+        .reschedule-page{--r-ink:#163640;--r-muted:#60777b;--r-line:#dcebe7;--r-mint:#edf8f5;--r-teal:#087f79;max-width:980px;margin:0 auto;color:var(--r-ink)}
+        .reschedule-hero{padding:30px 34px;border-radius:24px;color:#fff;background:#163e48}
+        .reschedule-hero h1{margin:0;color:#fff!important;font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.08;letter-spacing:-.035em}
+        .reschedule-hero p{max-width:620px;margin:10px 0 0;color:#d6e9e5;line-height:1.55}
+        .reschedule-card{margin-top:18px;padding:25px;border:1px solid var(--r-line);border-radius:20px;background:#fff;box-shadow:0 10px 28px #163e480c}
+        .reschedule-current{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+        .reschedule-current div{padding:14px 16px;border-radius:12px;background:var(--r-mint)}
+        .reschedule-current span{display:block;color:var(--r-muted);font-size:12px}
+        .reschedule-current strong{display:block;margin-top:4px;font-size:14px}
+        .reschedule-card h2{margin:0;color:var(--r-ink);font-size:19px}
+        .reschedule-intro{margin:6px 0 16px;color:var(--r-muted);font-size:14px}
+        .reschedule-dates{display:flex;gap:8px;overflow-x:auto;padding:2px 1px 10px}
+        .reschedule-date{min-width:104px;padding:11px;border:1px solid var(--r-line);border-radius:11px;color:var(--r-ink);background:white;cursor:pointer}
+        .reschedule-date strong,.reschedule-date span{display:block}.reschedule-date strong{font-size:14px}.reschedule-date span{margin-top:4px;color:var(--r-muted);font-size:12px}
+        .reschedule-date[aria-pressed=true]{border-color:var(--r-teal);color:#fff;background:var(--r-teal)}.reschedule-date[aria-pressed=true] span{color:#d8f0ec}
+        .reschedule-slots-head{display:flex;justify-content:space-between;gap:12px;margin:17px 0 10px}.reschedule-slots-head h3{margin:0;font-size:14px}.reschedule-slots-head span{color:var(--r-muted);font-size:13px}
+        .reschedule-slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+        .reschedule-slot{min-height:44px;border:1px solid var(--r-line);border-radius:9px;color:#075e5a;background:#fff;font-weight:700;cursor:pointer}
+        .reschedule-slot[aria-pressed=true],.reschedule-slot:hover{border-color:var(--r-teal);color:#fff;background:var(--r-teal)}
+        .reschedule-empty{grid-column:1/-1;padding:18px;border-radius:10px;color:var(--r-muted);background:#f7fbfa}
+        .reschedule-loading{padding:20px 4px;color:var(--r-muted)}.reschedule-loading[hidden]{display:none!important}
+        .reschedule-error{margin-top:14px;padding:12px 14px;border-radius:10px;color:#8e3e46;background:#fff3f2}
+        .reschedule-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:22px;padding-top:18px;border-top:1px solid var(--r-line)}
+        .reschedule-actions p{margin:0;color:var(--r-muted);font-size:13px}.reschedule-actions button{min-height:46px;padding:11px 18px;border:0;border-radius:10px;color:#fff;background:var(--r-teal);font:inherit;font-weight:800;cursor:pointer}.reschedule-actions button:disabled{color:#91a5a5;background:#e4eeec;cursor:not-allowed}
+        .reschedule-back{display:inline-block;margin-top:15px;color:var(--r-teal);font-size:14px;font-weight:700;text-decoration:none}.reschedule-page button:focus-visible,.reschedule-back:focus-visible{outline:3px solid #087f794a;outline-offset:2px}
+        @media(max-width:650px){.reschedule-hero{padding:24px 21px}.reschedule-card{padding:19px 15px}.reschedule-current{grid-template-columns:1fr}.reschedule-slots{grid-template-columns:repeat(3,minmax(0,1fr))}.reschedule-actions{align-items:stretch;flex-direction:column}.reschedule-actions button{width:100%}}
+    </style>
+    <section class="reschedule-hero"><h1>Перенос записи</h1><p>Выберите другое свободное время у того же врача. После подтверждения новая дата заменит текущую.</p></section>
+    <section class="reschedule-card" id="rescheduleApp" th:attr="data-doctor-id=${appointment.doctor.idUser},data-days=${bookingPreviewDays}">
+        <div class="reschedule-current">
+            <div><span>Текущая дата и время</span><strong th:text="${#temporals.format(appointment.appointmentDate,'d MMMM yyyy, HH:mm')}">Дата</strong></div>
+            <div><span>Врач</span><strong th:text="${appointment.doctor.displayName}">Врач</strong></div>
+        </div>
+        <h2>Выберите свободное время</h2><p class="reschedule-intro">Показываем доступные интервалы только для этого врача.</p>
+        <div id="rescheduleDates" class="reschedule-dates" aria-label="Доступные даты"></div>
+        <div class="reschedule-slots-head"><h3>Свободные интервалы</h3><span id="rescheduleStatus">Выберите дату</span></div>
+        <div id="rescheduleLoading" class="reschedule-loading" hidden>Проверяем расписание…</div>
+        <div id="rescheduleSlots" class="reschedule-slots" aria-live="polite"></div>
+        <p id="rescheduleError" class="reschedule-error" role="alert" hidden></p>
+        <form id="rescheduleForm" method="post" th:action="@{/appointments/{id}/reschedule(id=${appointment.idAppointment})}">
+            <input th:if="${_csrf != null}" type="hidden" name="_csrf" th:value="${_csrf.token}">
+            <input id="rescheduleDateTime" type="hidden" name="appointmentDate">
+            <div class="reschedule-actions"><p id="rescheduleSummary">Выберите дату и свободное время.</p><button id="rescheduleSubmit" type="submit" disabled>Подтвердить перенос</button></div>
+        </form>
+        <a class="reschedule-back" th:href="@{/appointments}">Вернуться к моим записям</a>
+    </section>
+    <script>
+        (()=>{
+            const root=document.getElementById('rescheduleApp'); if(!root)return;
+            const doctorId=root.dataset.doctorId, days=Math.max(1,Math.min(Number(root.dataset.days)||30,90));
+            const dates=document.getElementById('rescheduleDates'),slots=document.getElementById('rescheduleSlots'),loading=document.getElementById('rescheduleLoading'),status=document.getElementById('rescheduleStatus'),errorBox=document.getElementById('rescheduleError'),submit=document.getElementById('rescheduleSubmit'),dateTime=document.getElementById('rescheduleDateTime'),summary=document.getElementById('rescheduleSummary');
+            let chosenDate=null,chosenTime=null,requestNo=0;
+            const isoDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const label=iso=>{const d=new Date(`${iso}T00:00:00`),today=new Date();today.setHours(0,0,0,0);const delta=Math.round((d-today)/86400000);return delta===0?'Сегодня':delta===1?'Завтра':d.toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'short'});};
+            const fail=message=>{errorBox.textContent=message;errorBox.hidden=false;};
+            const setReady=()=>{const ready=Boolean(chosenDate&&chosenTime);submit.disabled=!ready;dateTime.value=ready?`${chosenDate}T${chosenTime}`:'';summary.textContent=ready?`${label(chosenDate)}, ${chosenTime}`:'Выберите дату и свободное время.';};
+            async function load(iso){const request=++requestNo;chosenDate=iso;chosenTime=null;errorBox.hidden=true;slots.replaceChildren();dates.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.date===iso)));loading.hidden=false;status.textContent='Загрузка…';setReady();try{const response=await fetch(`/appointments/availability?doctorId=${encodeURIComponent(doctorId)}&date=${encodeURIComponent(iso)}`,{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('Не удалось проверить расписание. Попробуйте ещё раз.');const data=await response.json();if(request!==requestNo)return;loading.hidden=true;const available=(data.slots||[]).filter(s=>s.available);status.textContent=available.length?`${available.length} свободных вариантов`:'Нет свободного времени';if(!available.length){const empty=document.createElement('div');empty.className='reschedule-empty';empty.textContent='На эту дату свободного времени нет. Выберите другой день.';slots.append(empty);return;}available.forEach(slot=>{const button=document.createElement('button');button.type='button';button.className='reschedule-slot';button.textContent=slot.time;button.setAttribute('aria-pressed','false');button.addEventListener('click',()=>{chosenTime=slot.time;slots.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));button.setAttribute('aria-pressed','true');setReady();});slots.append(button);});}catch(e){if(request!==requestNo)return;loading.hidden=true;status.textContent='Ошибка загрузки';fail(e.message);}}
+            const today=new Date();today.setHours(0,0,0,0);for(let offset=0;offset<days;offset++){const date=new Date(today);date.setDate(today.getDate()+offset);const iso=isoDate(date),button=document.createElement('button');button.type='button';button.className='reschedule-date';button.dataset.date=iso;button.setAttribute('aria-pressed','false');const day=document.createElement('strong'),full=document.createElement('span');day.textContent=label(iso);full.textContent=date.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});button.append(day,full);button.addEventListener('click',()=>load(iso));dates.append(button);}
+            document.getElementById('rescheduleForm').addEventListener('submit',async event=>{event.preventDefault();if(!chosenDate||!chosenTime)return;submit.disabled=true;submit.textContent='Сохраняем…';errorBox.hidden=true;try{const csrf=document.querySelector('meta[name="_csrf"]')?.content,headers={'X-Requested-With':'XMLHttpRequest','Accept':'application/json'};if(csrf)headers['X-CSRF-TOKEN']=csrf;const response=await fetch(event.currentTarget.action,{method:'POST',headers,body:new FormData(event.currentTarget)});const text=await response.text();let data={};try{data=text?JSON.parse(text):{};}catch(_){}if(!response.ok)throw new Error(data.message||data.detail||'Не удалось перенести запись. Обновите страницу и попробуйте снова.');window.location.assign(data.redirectUrl||'/appointments');}catch(e){fail(e.message);submit.textContent='Подтвердить перенос';setReady();}});
+        })();
+    </script>
+</main>
+</body>
+</html>

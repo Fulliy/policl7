@@ -33,6 +33,10 @@ public class PatientBookingCatalogSeeder implements CommandLineRunner {
     @Override @Transactional
     public void run(String... args) {
         if (!enabled) return;
+        goals.findFirstByNameIgnoreCase("Единое окно").ifPresent(goal -> {
+            goal.setActive(false);
+            goals.save(goal);
+        });
         ClinicBranch main = branch("Медцентр «Забота»", "г. Москва, ул. Заботы, 1", "+7 (495) 000-00-01");
         ClinicBranch north = branch("Филиал «Забота — Северный»", "г. Москва, ул. Северная, 10", "+7 (495) 000-00-02");
         List<User> doctors = users.findAll().stream()
@@ -63,8 +67,6 @@ public class PatientBookingCatalogSeeder implements CommandLineRunner {
                 AppointmentGoal.ScenarioType.DOCTORS, 50, false, null, null, allDoctorSpecialties);
         seedGoal("Диспансеризация", "checkup", AppointmentGoal.GoalGroup.POLYCLINIC,
                 AppointmentGoal.ScenarioType.DOCTORS, 60, false, null, null, allDoctorSpecialties);
-        seedGoal("Единое окно", "window", AppointmentGoal.GoalGroup.POLYCLINIC,
-                AppointmentGoal.ScenarioType.DOCTORS, 70, false, null, null, allDoctorSpecialties);
         seedGoal("Запись в женскую консультацию", "women", AppointmentGoal.GoalGroup.OTHER_INSTITUTIONS,
                 AppointmentGoal.ScenarioType.EXTERNAL, 80, false, "Запись выполняется через внешнюю женскую консультацию.", null, List.of());
         seedGoal("Запись к психологу", "psychologist", AppointmentGoal.GoalGroup.OTHER_INSTITUTIONS,

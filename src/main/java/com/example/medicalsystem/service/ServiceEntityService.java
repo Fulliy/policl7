@@ -20,13 +20,16 @@ public class ServiceEntityService {
     @Value("${app.demo-data.enabled:false}")
     private boolean demoDataEnabled;
 
+    @Value("${app.demo-data.reset:false}")
+    private boolean demoDataReset;
+
     public ServiceEntityService(ServiceRepository repository) {
         this.repository = repository;
     }
 
     @PostConstruct
     public void init() {
-        if (!demoDataEnabled) {
+        if (!demoDataEnabled || demoDataReset) {
             return;
         }
         String[] names = {"Консультация терапевта", "УЗИ", "МРТ", "Анализ крови", "ЭКГ",

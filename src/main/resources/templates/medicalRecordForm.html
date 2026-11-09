@@ -24,6 +24,7 @@
 </head>
 <body>
 <div class="container">
+    <a th:if="${isDoctor and medicalRecord.appointment != null}" th:href="@{/doctor/patients/{id}(id=${medicalRecord.appointment.user.idUser},appointmentId=${medicalRecord.appointment.idAppointment})}" style="display:inline-block;margin-bottom:14px;color:#087f79;font-weight:700;text-decoration:none">← Вернуться к карте пациента</a>
     <div class="card">
         <h2 th:text="${medicalRecord.idRecord} != null ? 'Редактирование записи' : 'Новая запись'"></h2>
         <form th:action="${medicalRecord.idRecord} != null ? '/medicalRecords/update' : '/medicalRecords/save'" th:object="${medicalRecord}" method="post">
@@ -31,13 +32,15 @@
             <div class="form-group"><label>Диагноз</label><textarea th:field="*{diagnosis}"></textarea><div class="error" th:if="${#fields.hasErrors('diagnosis')}" th:errors="*{diagnosis}"></div></div>
             <div class="form-group"><label>Лечение</label><textarea th:field="*{treatment}"></textarea><div class="error" th:if="${#fields.hasErrors('treatment')}" th:errors="*{treatment}"></div></div>
             <div class="form-group"><label>Рекомендации</label><textarea th:field="*{recommendations}"></textarea><div class="error" th:if="${#fields.hasErrors('recommendations')}" th:errors="*{recommendations}"></div></div>
-            <div class="form-group"><label>Дата создания</label><input type="datetime-local" th:field="*{createdDate}"><div class="error" th:if="${#fields.hasErrors('createdDate')}" th:errors="*{createdDate}"></div></div>
+            <div class="form-group" th:if="${!isDoctor}"><label>Дата создания</label><input type="datetime-local" th:field="*{createdDate}"><div class="error" th:if="${#fields.hasErrors('createdDate')}" th:errors="*{createdDate}"></div></div><p th:if="${isDoctor}" class="form-group" style="color:#61777b;font-size:13px">Дата медицинского итога будет сохранена автоматически.</p>
             <div class="form-group">
                 <label>Прием</label>
-                <select th:field="*{appointment}">
-                    <option value="">Выберите прием</option>
-                    <option th:each="a : ${appointments}" th:value="${a.idAppointment}" th:text="${#temporals.format(a.appointmentDate, 'dd.MM.yyyy HH:mm') + ' - ' + (a.user != null ? a.user.surname + ' ' + a.user.firstName : 'пациент не указан')}"></option>
+                <select th:if="${medicalRecord.appointment == null or !isDoctor}" th:field="*{appointment}">
+                    <option value="">Выберите приём</option>
+                    <option th:each="a : ${appointments}" th:value="${a.idAppointment}" th:text="${#temporals.format(a.appointmentDate, 'dd.MM.yyyy HH:mm') + ' — ' + (a.user != null ? a.user.surname + ' ' + a.user.firstName : 'пациент не указан')}"></option>
                 </select>
+                <p th:if="${medicalRecord.appointment != null and isDoctor}" th:text="${#temporals.format(medicalRecord.appointment.appointmentDate, 'dd.MM.yyyy HH:mm') + ' — ' + (medicalRecord.appointment.user != null ? medicalRecord.appointment.user.displayName : 'пациент не указан')}" style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;background:#f7fbfa;color:#263746"></p>
+                <input th:if="${medicalRecord.appointment != null and isDoctor}" type="hidden" th:field="*{appointment}">
                 <div class="error" th:if="${#fields.hasErrors('appointment')}" th:errors="*{appointment}"></div>
             </div>
             <div class="btn-group"><button type="submit" class="btn btn-save">Сохранить</button><a th:href="@{/medicalRecords}" class="btn btn-cancel">Отмена</a></div>

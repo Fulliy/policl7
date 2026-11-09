@@ -3,39 +3,64 @@
       th:replace="~{layout :: portalPage('Расписание врача', 'dashboard', ~{::content})}">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><script src="https://cdn.tailwindcss.com"></script></head>
 <body>
-<main th:fragment="content" class="space-y-7">
-    <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p class="mb-2 text-sm font-semibold text-clinic-700">РАБОЧЕЕ МЕСТО ВРАЧА</p><h1 class="text-3xl font-bold tracking-tight text-ink sm:text-4xl">Здравствуйте, <span th:text="${doctor.firstName}">Иван</span>!</h1><p class="mt-2 text-sm text-slate-500">Ваши приёмы и расписание на ближайшую неделю.</p></div>
-        <div class="rounded-xl border border-[#dcece9] bg-white px-4 py-3 text-sm text-slate-600 shadow-card"><span class="font-semibold text-ink">Сегодня:</span> <time th:text="${#temporals.format(today, 'd MMMM yyyy')}">31 октября 2026</time></div>
+<main th:fragment="content" class="doctor-dashboard space-y-7">
+    <style>
+        .doctor-dashboard .doctor-hero{padding:29px 32px;border-radius:24px;color:#fff;background:#163e48;box-shadow:0 17px 38px #163e4820}
+        .doctor-dashboard .doctor-hero h1{margin:0;color:#fff!important;font-size:clamp(2rem,4vw,2.8rem);line-height:1.05;letter-spacing:-.04em}
+        .doctor-dashboard .doctor-hero p{margin:10px 0 0;color:#d6e9e5;line-height:1.5}
+        .doctor-dashboard .doctor-appointment{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 20px;border-bottom:1px solid #edf3f2}
+        .doctor-dashboard .doctor-appointment:last-child{border-bottom:0}
+        .doctor-dashboard .doctor-time{align-self:stretch;display:flex;flex-direction:column;justify-content:center;padding-right:14px;border-right:1px solid #dcebe7;color:#087f79;font-size:15px;font-weight:800}
+        .doctor-dashboard .doctor-time small{margin-top:4px;color:#74898b;font-size:11px;font-weight:600}
+        .doctor-dashboard .doctor-patient-name{color:#163640;font-weight:800}
+        .doctor-dashboard .doctor-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px;color:#61777b;font-size:12px}
+        .doctor-dashboard .doctor-meta span{padding:4px 8px;border-radius:7px;background:#f2f8f6}
+        .doctor-dashboard .doctor-status{padding:5px 8px;border-radius:8px;color:#4a7772;background:#edf8f5;font-size:11px;font-weight:800}
+        .doctor-dashboard .doctor-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+        .doctor-dashboard .doctor-action{min-height:39px;padding:9px 12px;border:1px solid #cfe4df;border-radius:9px;color:#08716d;background:#fff;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap}
+        .doctor-dashboard .doctor-action:hover{background:#edf8f5}
+        .doctor-dashboard .doctor-action.primary{border-color:#087f79;color:#fff;background:#087f79}
+        .doctor-dashboard .doctor-panel{overflow:hidden;border:1px solid #dcece9;border-radius:19px;background:#fff;box-shadow:0 9px 24px #163e4809}
+        .doctor-dashboard .doctor-panel-heading{padding:18px 22px;border-bottom:1px solid #edf3f2}
+        .doctor-dashboard .doctor-panel-heading h2{margin:0;color:#163640;font-size:18px;font-weight:800}
+        .doctor-dashboard .doctor-panel-heading p{margin:5px 0 0;color:#61777b;font-size:13px}
+        .doctor-dashboard .doctor-empty{padding:30px 18px;color:#61777b;text-align:center}
+        @media(max-width:700px){.doctor-dashboard .doctor-hero{padding:24px 21px}.doctor-dashboard .doctor-appointment{grid-template-columns:58px minmax(0,1fr);gap:12px;padding:15px}.doctor-dashboard .doctor-time{font-size:14px}.doctor-dashboard .doctor-actions{grid-column:1/-1;justify-content:flex-start}.doctor-dashboard .doctor-panel-heading{padding:16px}}
+        @media(prefers-reduced-motion:reduce){.doctor-dashboard *{scroll-behavior:auto!important}}
+    </style>
+    <section class="doctor-hero flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div><p class="mb-2 text-sm font-semibold text-[#a9ded4]">РАБОЧЕЕ МЕСТО ВРАЧА</p><h1>Здравствуйте, <span th:text="${doctor.firstName}">Иван</span>!</h1><p>Здесь собраны сегодняшние пациенты, ближайшие приёмы и быстрый доступ к медицинским итогам.</p></div>
+        <div class="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-[#e2f1ee]"><span class="font-semibold text-white">Сегодня:</span> <time th:text="${#temporals.format(today, 'd MMMM yyyy')}">31 октября 2026</time></div>
     </section>
 
     <section class="grid gap-4 sm:grid-cols-3" aria-label="Сводка расписания">
         <article class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card"><p class="text-sm text-slate-500">Приёмов сегодня</p><p class="mt-2 text-3xl font-bold text-ink" th:text="${appointmentsToday}">4</p></article>
-        <article class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card"><p class="text-sm text-slate-500">На этой неделе</p><p class="mt-2 text-3xl font-bold text-ink" th:text="${weekAppointments.size()}">12</p></article>
+        <article class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card"><p class="text-sm text-slate-500">Пациентов за неделю</p><p class="mt-2 text-3xl font-bold text-ink" th:text="${weekAppointments.size()}">12</p></article>
         <article class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card"><p class="text-sm text-slate-500">Специальность</p><p class="mt-2 text-lg font-bold text-ink" th:text="${doctor.specialty != null ? doctor.specialty.specialtyName : 'Не указана'}">Терапевт</p></article>
     </section>
+    <p class="rounded-xl border border-[#dcece9] bg-[#f7fbfa] px-4 py-3 text-sm leading-6 text-slate-600">Откройте карту пациента, чтобы посмотреть его историю. Заполнить или изменить итог приёма можно после назначенного времени.</p>
 
-    <section id="my-patients" class="overflow-hidden rounded-2xl border border-[#dcece9] bg-white shadow-card" aria-labelledby="today-title">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5 sm:p-6"><div><h2 id="today-title" class="text-lg font-bold text-ink">Расписание на сегодня</h2><p class="mt-1 text-sm text-slate-500">Пациенты, записанные к вам сегодня</p></div><span class="rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${todayAppointments.size() + ' приёма'}">4 приёма</span></div>
-        <div class="divide-y divide-slate-100 px-5 sm:px-6">
-            <article th:each="appointment : ${todayAppointments}" class="grid gap-4 py-4 sm:grid-cols-[100px_minmax(0,1fr)_auto] sm:items-center">
-                <time class="font-semibold text-clinic-700" th:text="${#temporals.format(appointment.appointmentDate, 'HH:mm')}">10:30</time>
-                <div><p class="font-semibold text-ink" th:text="${appointment.user != null ? appointment.user.displayName : 'Пациент не указан'}">Петрова Анна Сергеевна</p><p class="mt-1 text-sm text-slate-500" th:text="${appointment.department != null ? appointment.department.departmentName : 'Отделение не указано'}">Терапевтическое отделение</p></div>
-                <div class="flex flex-wrap items-center gap-2"><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600" th:text="${appointment.status}">Запланирован</span><a th:href="@{/doctor/patients}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 hover:bg-clinic-50">Мои пациенты</a></div>
+    <section id="my-patients" class="doctor-panel" aria-labelledby="today-title">
+        <div class="doctor-panel-heading flex flex-wrap items-center justify-between gap-3"><div><h2 id="today-title">Расписание на сегодня</h2><p>Пациенты, записанные к вам сегодня. Открывайте карту конкретного пациента прямо из расписания.</p></div><span class="rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${todayAppointments.size() + ' приёма'}">4 приёма</span></div>
+        <div>
+            <article th:each="appointment : ${todayAppointments}" class="doctor-appointment">
+                <time class="doctor-time" th:text="${#temporals.format(appointment.appointmentDate, 'HH:mm')}">10:30</time>
+                <div><p class="doctor-patient-name" th:text="${appointment.user != null ? appointment.user.displayName : 'Пациент не указан'}">Петрова Анна Сергеевна</p><div class="doctor-meta"><span th:text="${appointment.department != null ? appointment.department.departmentName : 'Отделение не указано'}">Терапевтическое отделение</span><span class="doctor-status" th:text="${appointment.statusLabel}">Ожидает подтверждения</span></div><div th:if="${appointment.medicalRecords != null and !appointment.medicalRecords.isEmpty()}" class="mt-2 text-xs font-semibold text-[#087f79]">Итог уже заполнен</div></div>
+                <div class="doctor-actions"><a th:if="${appointment.user != null}" th:href="@{/doctor/patients/{id}(id=${appointment.user.idUser},appointmentId=${appointment.idAppointment})}" class="doctor-action primary">Открыть карту</a><span th:if="${appointment.medicalRecords != null and !appointment.medicalRecords.isEmpty()}" class="doctor-action">Итог заполнен</span></div>
             </article>
-            <p th:if="${todayAppointments.isEmpty()}" class="py-10 text-center text-sm text-slate-500">На сегодня приёмов нет.</p>
+            <p th:if="${todayAppointments.isEmpty()}" class="doctor-empty">На сегодня приёмов нет.</p>
         </div>
     </section>
 
-    <section class="overflow-hidden rounded-2xl border border-[#dcece9] bg-white shadow-card" aria-labelledby="week-title">
-        <div class="border-b border-slate-100 p-5 sm:p-6"><h2 id="week-title" class="text-lg font-bold text-ink">Ближайшая неделя</h2><p class="mt-1 text-sm text-slate-500">Записи пациентов по времени</p></div>
-        <div class="divide-y divide-slate-100 px-5 sm:px-6">
-            <article th:each="appointment : ${weekAppointments}" class="grid gap-3 py-4 sm:grid-cols-[170px_minmax(0,1fr)_auto] sm:items-center">
-                <div><time class="font-semibold text-ink" th:text="${#temporals.format(appointment.appointmentDate, 'dd.MM.yyyy')}">03.11.2026</time><span class="ml-2 text-sm text-clinic-700" th:text="${#temporals.format(appointment.appointmentDate, 'HH:mm')}">11:00</span></div>
-                <p class="text-sm font-medium text-slate-700" th:text="${appointment.user != null ? appointment.user.displayName : 'Пациент не указан'}">Петрова Анна Сергеевна</p>
-                <a th:href="@{/doctor/patients}" class="w-fit text-sm font-semibold text-clinic-700 hover:underline">Перейти к пациентам →</a>
+    <section class="doctor-panel" aria-labelledby="week-title">
+        <div class="doctor-panel-heading"><h2 id="week-title">Ближайшая неделя</h2><p>Предстоящие визиты по времени</p></div>
+        <div>
+            <article th:each="appointment : ${weekAppointments}" class="doctor-appointment">
+                <time class="doctor-time"><span th:text="${#temporals.format(appointment.appointmentDate, 'HH:mm')}">11:00</span><small th:text="${#temporals.format(appointment.appointmentDate, 'dd.MM')}">03.11</small></time>
+                <div><p class="doctor-patient-name" th:text="${appointment.user != null ? appointment.user.displayName : 'Пациент не указан'}">Петрова Анна Сергеевна</p><div class="doctor-meta"><span th:text="${appointment.department != null ? appointment.department.departmentName : 'Отделение не указано'}">Отделение</span><span class="doctor-status" th:text="${appointment.statusLabel}">Ожидает подтверждения</span></div></div>
+                <div class="doctor-actions"><a th:if="${appointment.user != null}" th:href="@{/doctor/patients/{id}(id=${appointment.user.idUser},appointmentId=${appointment.idAppointment})}" class="doctor-action">Перейти к медкарте</a></div>
             </article>
-            <p th:if="${weekAppointments.isEmpty()}" class="py-10 text-center text-sm text-slate-500">На ближайшую неделю записей нет.</p>
+            <p th:if="${weekAppointments.isEmpty()}" class="doctor-empty">На ближайшую неделю записей нет.</p>
         </div>
     </section>
 </main>

@@ -23,6 +23,9 @@ public class MedicalRecordService {
     @Value("${app.demo-data.enabled:false}")
     private boolean demoDataEnabled;
 
+    @Value("${app.demo-data.reset:false}")
+    private boolean demoDataReset;
+
     public MedicalRecordService(MedicalRecordRepository repository,
                                 AppointmentRepository appointmentRepository) {
         this.repository = repository;
@@ -31,7 +34,7 @@ public class MedicalRecordService {
 
     @PostConstruct
     public void init() {
-        if (!demoDataEnabled) {
+        if (!demoDataEnabled || demoDataReset) {
             return;
         }
         long count = repository.count();
@@ -88,6 +91,11 @@ public class MedicalRecordService {
 
     public List<MedicalRecord> findByAppointment(Integer idAppointment) {
         return repository.findByAppointment_IdAppointment(idAppointment);
+    }
+
+    public List<MedicalRecord> findByAppointments(List<Integer> appointmentIds) {
+        if (appointmentIds == null || appointmentIds.isEmpty()) return List.of();
+        return repository.findByAppointment_IdAppointmentIn(appointmentIds);
     }
 
     public List<MedicalRecord> findAllForPatient(Integer patientId) {

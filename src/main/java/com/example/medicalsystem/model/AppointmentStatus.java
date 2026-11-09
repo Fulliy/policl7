@@ -9,7 +9,7 @@ public enum AppointmentStatus {
 
     public boolean canTransitionTo(AppointmentStatus next) {
         return switch (this) {
-            case pending -> next == confirmed || next == cancelled || next == no_show;
+            case pending -> next == confirmed || next == cancelled || next == no_show || next == completed;
             case confirmed -> next == cancelled || next == completed || next == no_show;
             case cancelled, completed, no_show -> false;
         };

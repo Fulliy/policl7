@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/medicalRecords")
-@PreAuthorize("hasAnyAuthority('ADMIN', 'DOCTOR')")
+@PreAuthorize("hasAnyAuthority('ADMIN', 'ROLE_ADMIN', 'DOCTOR', 'ROLE_DOCTOR')")
 @Tag(name = "Медицинские записи", description = "История болезни пациентов")
 public class MedicalRecordController {
 
@@ -56,33 +56,53 @@ public class MedicalRecordController {
         if (appointmentId != null) {
             record.setAppointment(appointmentService.findById(appointmentId));
             ensureDoctorOwns(record, principal);
-            ensureCompletedAppointment(record);
+            if (isDoctor(principal)) ensureAppointmentCanReceiveRecord(record);
         }
         model.addAttribute("medicalRecord", record);
         model.addAttribute("appointments", appointmentsFor(principal));
+        model.addAttribute("isDoctor", isDoctor(principal));
         return "medicalRecordForm";
     }
 
     @PostMapping("/save")
-    public String save(@Valid @ModelAttribute("medicalRecord") MedicalRecord record,
+    public String save(@RequestParam(required = false) Integer appointmentId,
+                       @Valid @ModelAttribute("medicalRecord") MedicalRecord record,
                        BindingResult result,
                        Model model, @AuthenticationPrincipal UserDetails principal) {
+        if (isDoctor(principal) && record.getAppointment() == null && appointmentId != null) {
+            record.setAppointment(appointmentService.findById(appointmentId));
+        }
         ensureDoctorOwns(record, principal);
+        if (isDoctor(principal)) {
+            ensureAppointmentCanReceiveRecord(record);
+            if (recordService.findByAppointment(record.getAppointment().getIdAppointment()).size() > 0) {
+                throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
+                        "Для этого приёма медицинский итог уже создан. Откройте его для редактирования.");
+            }
+            record.setCreatedDate(java.time.LocalDateTime.now(java.time.ZoneId.of("Europe/Moscow")));
+        }
         if (result.hasErrors()) {
             model.addAttribute("medicalRecord", record);
             model.addAttribute("appointments", appointmentsFor(principal));
+            model.addAttribute("isDoctor", isDoctor(principal));
             return "medicalRecordForm";
         }
+        if (!isDoctor(principal) && record.getCreatedDate() == null) {
+            record.setCreatedDate(java.time.LocalDateTime.now(java.time.ZoneId.of("Europe/Moscow")));
+        }
         recordService.save(record);
-        return isDoctor(principal) ? "redirect:/doctor/patients/" + record.getAppointment().getUser().getIdUser() : "redirect:/medicalRecords";
+        return isDoctor(principal) ? "redirect:/doctor/patients/" + record.getAppointment().getUser().getIdUser()
+                + "?appointmentId=" + record.getAppointment().getIdAppointment() : "redirect:/medicalRecords";
     }
 
     @GetMapping("/{id}/edit")
     public String showEditForm(@PathVariable Integer id, Model model, @AuthenticationPrincipal UserDetails principal) {
         MedicalRecord record = recordService.findById(id);
         ensureDoctorOwns(record, principal);
+        if (isDoctor(principal)) ensureAppointmentCanReceiveRecord(record);
         model.addAttribute("medicalRecord", record);
         model.addAttribute("appointments", appointmentsFor(principal));
+        model.addAttribute("isDoctor", isDoctor(principal));
         return "medicalRecordForm";
     }
 
@@ -94,18 +114,22 @@ public class MedicalRecordController {
         MedicalRecord previous = recordService.findById(id);
         ensureDoctorOwns(previous, principal);
         if (isDoctor(principal)) {
-            ensureCompletedAppointment(previous);
+            ensureAppointmentCanReceiveRecord(previous);
             record.setAppointment(previous.getAppointment());
+            record.setCreatedDate(previous.getCreatedDate());
         }
         if (result.hasErrors()) {
             record.setIdRecord(id);
             model.addAttribute("medicalRecord", record);
             model.addAttribute("appointments", appointmentsFor(principal));
+            model.addAttribute("isDoctor", isDoctor(principal));
             return "medicalRecordForm";
         }
         record.setIdRecord(id);
+        record.setCreatedDate(previous.getCreatedDate());
         recordService.save(record);
-        return isDoctor(principal) ? "redirect:/doctor/patients/" + record.getAppointment().getUser().getIdUser() : "redirect:/medicalRecords";
+        return isDoctor(principal) ? "redirect:/doctor/patients/" + record.getAppointment().getUser().getIdUser()
+                + "?appointmentId=" + record.getAppointment().getIdAppointment() : "redirect:/medicalRecords";
     }
 
     @PostMapping("/{id}/delete")
@@ -119,13 +143,20 @@ public class MedicalRecordController {
     private java.util.List<com.example.medicalsystem.model.Appointment> appointmentsFor(UserDetails principal) {
         if (!isDoctor(principal)) return appointmentService.findAll();
         User doctor = userService.findByUsername(principal.getUsername());
-        return appointmentService.findByDoctor(doctor.getIdUser());
+        return appointmentService.findByDoctor(doctor.getIdUser()).stream()
+                .filter(appointment -> appointment.getAppointmentDate() != null
+                        && !appointment.getAppointmentDate().isAfter(java.time.LocalDateTime.now(java.time.ZoneId.of("Europe/Moscow"))))
+                .filter(appointment -> "completed".equalsIgnoreCase(appointment.getStatus())
+                        || "pending".equalsIgnoreCase(appointment.getStatus())
+                        || "confirmed".equalsIgnoreCase(appointment.getStatus()))
+                .toList();
     }
 
     private void ensureDoctorOwns(MedicalRecord record, UserDetails principal) {
         if (!isDoctor(principal)) return;
         User doctor = userService.findByUsername(principal.getUsername());
-        if (record == null || record.getAppointment() == null || record.getAppointment().getDoctor() == null
+        if (record == null || record.getAppointment() == null || record.getAppointment().getUser() == null
+                || record.getAppointment().getDoctor() == null
                 || !doctor.getIdUser().equals(record.getAppointment().getDoctor().getIdUser())) {
             throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
                     "Доступ разрешён только к медкартам ваших пациентов.");
@@ -133,15 +164,25 @@ public class MedicalRecordController {
     }
 
     private static boolean isDoctor(UserDetails principal) {
-        return principal != null && principal.getAuthorities().stream().anyMatch(authority -> "DOCTOR".equals(authority.getAuthority()));
+        return principal != null && principal.getAuthorities().stream().anyMatch(authority ->
+                "DOCTOR".equals(authority.getAuthority()) || "ROLE_DOCTOR".equals(authority.getAuthority()));
     }
 
-    private void ensureCompletedAppointment(MedicalRecord record) {
+    private void ensureAppointmentCanReceiveRecord(MedicalRecord record) {
         if (record == null || record.getAppointment() == null
-                || !"completed".equalsIgnoreCase(record.getAppointment().getStatus())) {
+                || record.getAppointment().getUser() == null
+                || record.getAppointment().getAppointmentDate() == null
+                || record.getAppointment().getAppointmentDate().isAfter(java.time.LocalDateTime.now(java.time.ZoneId.of("Europe/Moscow")))) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.CONFLICT,
-                    "Медицинский итог можно заполнить только после завершения приёма.");
+                    "Заполнить медицинский итог можно после времени приёма.");
+        }
+        String status = record.getAppointment().getStatus();
+        if (!"completed".equalsIgnoreCase(status) && !"pending".equalsIgnoreCase(status)
+                && !"confirmed".equalsIgnoreCase(status)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "Для этой записи нельзя добавить медицинский итог.");
         }
     }
 

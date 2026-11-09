@@ -1,8 +1,11 @@
 package com.example.medicalsystem.controller;
 
 import com.example.medicalsystem.model.PatientAffiliation;
+import com.example.medicalsystem.model.ClinicBranch;
+import java.util.List;
 import com.example.medicalsystem.model.RoleEnum;
 import com.example.medicalsystem.repository.PatientAffiliationRepository;
+import com.example.medicalsystem.repository.ClinicBranchRepository;
 import com.example.medicalsystem.repository.UserRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -17,10 +20,13 @@ import org.springframework.web.bind.annotation.*;
 public class AdminAffiliationsController {
     private final PatientAffiliationRepository affiliations;
     private final UserRepository users;
+    private final ClinicBranchRepository branches;
 
-    public AdminAffiliationsController(PatientAffiliationRepository affiliations, UserRepository users) {
+    public AdminAffiliationsController(PatientAffiliationRepository affiliations, UserRepository users,
+                                       ClinicBranchRepository branches) {
         this.affiliations = affiliations;
         this.users = users;
+        this.branches = branches;
     }
 
     @GetMapping
@@ -28,20 +34,36 @@ public class AdminAffiliationsController {
         model.addAttribute("affiliations", affiliations.findAll());
         model.addAttribute("patients", users.findAll().stream()
                 .filter(user -> user.getRoles() != null && user.getRoles().contains(RoleEnum.PATIENT)).toList());
+        model.addAttribute("doctors", users.findAll().stream()
+                .filter(user -> user.getRoles() != null && user.getRoles().contains(RoleEnum.DOCTOR)).toList());
+        model.addAttribute("branches", branches.findAllByOrderByNameAsc());
         model.addAttribute("statuses", PatientAffiliation.AffiliationStatus.values());
         return "adminAffiliations";
     }
 
     @PostMapping
-    public String save(@RequestParam @jakarta.validation.constraints.NotNull Integer patientId,
-                       @RequestParam @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 200) String medicalCenterName,
-                       @RequestParam @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 150) String doctorName,
+    public Object save(@RequestParam @jakarta.validation.constraints.NotNull Integer patientId,
+                       @RequestParam(required = false) Integer branchId,
+                       @RequestParam(required = false) Integer doctorId,
+                       @RequestParam(required = false) String medicalCenterName,
+                       @RequestParam(required = false) String doctorName,
                        @RequestParam @jakarta.validation.constraints.NotNull java.time.LocalDate attachedAt,
                        @RequestParam @jakarta.validation.constraints.NotNull PatientAffiliation.AffiliationStatus status) {
+        try {
         var patient = users.findById(patientId).orElseThrow(() ->
                 new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Пациент не найден."));
-        String center = medicalCenterName.trim();
-        String doctor = doctorName.trim();
+        ClinicBranch branch = branchId == null ? null : branches.findById(branchId).orElseThrow(() ->
+                new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Выбранный медцентр не найден."));
+        var selectedDoctor = doctorId == null ? null : users.findById(doctorId).orElseThrow(() ->
+                new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Выбранный врач не найден."));
+        if (selectedDoctor != null && (selectedDoctor.getRoles() == null || !selectedDoctor.getRoles().contains(RoleEnum.DOCTOR))) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Выбранный пользователь не является врачом.");
+        }
+        String center = branch != null ? branch.getName() : medicalCenterName == null ? "" : medicalCenterName.trim();
+        String doctor = selectedDoctor != null ? selectedDoctor.getDisplayName() : "";
+        if (branch == null || center.isBlank())
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Выберите медцентр из списка.");
         if (affiliations.existsByPatient_IdUserAndMedicalCenterNameAndDoctorNameAndAttachedAt(
                 patientId, center, doctor, attachedAt)) {
             throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
@@ -55,6 +77,10 @@ public class AdminAffiliationsController {
         affiliation.setStatus(status);
         affiliations.save(affiliation);
         return "redirect:/admin/patient-affiliations";
+        } catch (org.springframework.web.server.ResponseStatusException exception) {
+            return org.springframework.http.ResponseEntity.status(exception.getStatusCode())
+                    .body(java.util.Map.of("message", exception.getReason() == null ? "Не удалось сохранить прикрепление." : exception.getReason()));
+        }
     }
 
     @PostMapping("/{id}/delete")

@@ -31,6 +31,9 @@ public class UserService {
     @Value("${app.demo-data.enabled:false}")
     private boolean demoDataEnabled;
 
+    @Value("${app.demo-data.reset:false}")
+    private boolean demoDataReset;
+
     public UserService(UserRepository repository,
                        DepartmentRepository departmentRepository,
                        SpecialtyRepository specialtyRepository,
@@ -46,6 +49,8 @@ public class UserService {
         if (!demoDataEnabled) {
             return;
         }
+        // Полный локальный reset выполняет DemoDataResetOrchestrator после инициализации контекста.
+        if (demoDataReset) return;
         ensureDemoUser(
                 "admin",
                 "admin@clinic.local",

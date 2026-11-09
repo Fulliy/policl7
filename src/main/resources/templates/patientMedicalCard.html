@@ -1,59 +1,16 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout :: portalPage('Медкарта', 'medical-card', ~{::content})}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-<main th:fragment="content" class="space-y-6">
-    <header>
-        <p class="text-sm font-semibold text-clinic-600">Личный кабинет</p>
-        <h1 class="mt-1 text-3xl font-bold tracking-tight text-ink">Медкарта</h1>
-        <p class="mt-2 text-sm text-slate-500">Итоги приёмов и рекомендации ваших врачей.</p>
-    </header>
-
-    <section th:if="${(medicalRecords == null or medicalRecords.isEmpty()) and pastVisits.isEmpty()}"
-             class="rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center shadow-card sm:px-10"
-             aria-labelledby="medical-card-empty-title">
-        <span class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-clinic-50 text-2xl text-clinic-600" aria-hidden="true">♡</span>
-        <h2 id="medical-card-empty-title" class="mt-5 text-xl font-bold text-ink">Медкарта пока не создана</h2>
-        <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">Она появится автоматически после первого приёма у врача.</p>
-        <a th:href="@{/appointments/new}" class="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-clinic-500 px-5 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-clinic-600">
-            Записаться на приём <span aria-hidden="true">→</span>
-        </a>
-    </section>
-
-    <section th:if="${medicalRecords != null and !medicalRecords.isEmpty()}"
-             class="space-y-4" aria-label="Медицинские записи">
-        <article th:each="record : ${medicalRecords}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <h2 class="text-lg font-bold text-ink" th:text="${record.diagnosis}">Итог приёма</h2>
-                <time class="rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700"
-                      th:if="${record.createdDate != null}"
-                      th:datetime="${#temporals.format(record.createdDate, 'yyyy-MM-dd''T''HH:mm:ss')}"
-                      th:text="${#temporals.format(record.createdDate, 'dd.MM.yyyy')}">05.11.2026</time>
-            </div>
-            <div th:if="${record.treatment != null and !record.treatment.isBlank()}" class="mt-4">
-                <h3 class="text-sm font-semibold text-slate-700">Лечение</h3>
-                <p class="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600" th:text="${record.treatment}">Назначенное лечение</p>
-            </div>
-            <div th:if="${record.recommendations != null and !record.recommendations.isBlank()}" class="mt-4">
-                <h3 class="text-sm font-semibold text-slate-700">Рекомендации</h3>
-                <p class="mt-1 whitespace-pre-line text-sm leading-6 text-slate-600" th:text="${record.recommendations}">Рекомендации врача</p>
-            </div>
-        </article>
-    </section>
-
-    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6" aria-label="История завершённых приёмов">
-        <h2 class="text-xl font-bold text-ink">История приёмов</h2>
-        <article th:each="visit : ${pastVisits}" class="mt-4 border-t border-slate-100 pt-4">
-            <div class="flex flex-wrap justify-between gap-2"><h3 class="font-semibold text-ink" th:text="${visit.department != null ? visit.department.departmentName : 'Приём врача'}">Отделение</h3><time class="text-sm text-slate-600" th:text="${#temporals.format(visit.appointmentDate, 'dd.MM.yyyy HH:mm')}">Дата</time></div>
-            <p th:if="${visit.doctor != null}" class="mt-1 text-sm text-slate-600" th:text="${visit.doctor.displayName}">Врач</p>
-            <div th:each="record : ${visit.medicalRecords}" class="mt-3 rounded-xl bg-clinic-50 p-4"><p class="font-semibold text-ink" th:text="${record.diagnosis}">Итог приёма</p><p th:if="${record.treatment != null and !record.treatment.isBlank()}" class="mt-2 whitespace-pre-line text-sm text-slate-700" th:text="${record.treatment}">Лечение</p><p th:if="${record.recommendations != null and !record.recommendations.isBlank()}" class="mt-2 whitespace-pre-line text-sm text-slate-700" th:text="${record.recommendations}">Рекомендации</p></div>
-        </article>
-        <p th:if="${pastVisits.isEmpty()}" class="mt-3 text-sm text-slate-600">Завершённых приёмов пока нет.</p>
-    </section>
-</main>
-</body>
-</html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: portalPage('Медкарта', 'medical-card', ~{::content})}">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body><main th:fragment="content" class="patient-medical-card space-y-7">
+<style>
+.patient-medical-card{--m-ink:#163640;--m-muted:#60777b;--m-line:#dcebe7;--m-mint:#edf8f5;--m-teal:#087f79}.patient-card-hero{padding:27px 31px;border-radius:24px;color:#fff;background:#163e48;box-shadow:0 17px 40px #163e4826}.patient-card-hero h1{margin:0;color:#fff!important;font-size:clamp(2rem,4vw,2.8rem);line-height:1.05;letter-spacing:-.04em}.patient-card-hero p{margin:10px 0 0;color:#d6e9e5}.medical-tabs{display:flex;gap:6px;overflow-x:auto;padding:5px;border-radius:13px;background:#eaf4f2}.medical-tab{min-height:44px;padding:10px 16px;border:0;border-radius:9px;color:#60777b;background:transparent;font:inherit;font-size:13px;font-weight:800;white-space:nowrap;cursor:pointer}.medical-tab[aria-selected=true]{color:#087f79;background:#fff;box-shadow:0 4px 12px #163e4814}.medical-pane{padding:23px;border:1px solid var(--m-line);border-radius:21px;background:#fff;box-shadow:0 10px 26px #163e480d}.medical-pane h2{margin:0;color:var(--m-ink)!important;font-size:20px}.medical-pane-intro{margin:6px 0 18px;color:var(--m-muted);font-size:13px}.medical-visits{display:grid;gap:11px}.medical-visit{padding:16px;border:1px solid var(--m-line);border-radius:15px;background:#fbfefd}.medical-visit-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.medical-visit-head strong{color:var(--m-ink);font-size:14px}.medical-visit-badge{padding:5px 9px;border-radius:8px;color:#42716c;background:var(--m-mint);font-size:11px;font-weight:800}.medical-visit-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.medical-visit-meta span{padding:5px 8px;border-radius:7px;color:#557477;background:#f1f8f6;font-size:11px}.medical-record-detail{margin-top:12px;padding:13px;border-left:3px solid var(--m-teal);border-radius:0 11px 11px 0;color:#486266;background:var(--m-mint);font-size:13px;line-height:1.5}.medical-record-detail p{margin:5px 0;white-space:pre-line}.medical-record-detail strong{color:var(--m-ink)}.medical-empty{padding:28px;border:1px dashed #b8d7d1;border-radius:14px;color:var(--m-muted);text-align:center}.doctor-subtabs{display:flex;gap:6px;overflow:auto;margin-bottom:16px;padding-bottom:5px}.doctor-subtab{min-height:40px;padding:9px 13px;border:1px solid var(--m-line);border-radius:9px;color:#60777b;background:#fff;font:inherit;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}.doctor-subtab[aria-selected=true]{border-color:#a8d4cc;color:#087f79;background:#edf8f5}.doctor-visit-panel[hidden],.medical-pane[hidden]{display:none!important}
+</style>
+<section class="patient-card-hero"><h1>Медкарта</h1><p>Завершённые приёмы, заключения и рекомендации врачей.</p></section>
+<section th:if="${(medicalRecords == null or medicalRecords.isEmpty()) and pastVisits.isEmpty()}" class="medical-pane text-center"><div class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-clinic-50 text-2xl text-clinic-700">♡</div><h2 class="mt-4">Медкарта пока пуста</h2><p class="medical-pane-intro">После завершённого приёма здесь появятся итоги и рекомендации врача.</p><a th:href="@{/appointments/new}" class="inline-flex min-h-12 items-center rounded-xl bg-clinic-500 px-5 py-3 font-bold text-white">Записаться на приём</a></section>
+<section th:if="${!pastVisits.isEmpty()}" class="medical-pane"><h2>История по врачам</h2><p class="medical-pane-intro">Выберите врача, чтобы просмотреть визиты и медицинские итоги у него.</p><div class="medical-tabs" role="tablist" aria-label="Медкарта по врачам"><button type="button" class="medical-tab" data-overview-tab aria-selected="true">Все врачи</button><button th:each="entry,stat : ${doctorGroups}" type="button" class="medical-tab" data-doctor-tab th:attr="data-doctor-index=${stat.index}" aria-selected="false" th:text="${entry.key}">Врач</button></div>
+<div class="mt-5 medical-visit-panel" data-overview-panel><div class="medical-visits"><article th:each="visit : ${pastVisits}" class="medical-visit"><div class="medical-visit-head"><strong th:text="${#temporals.format(visit.appointmentDate,'d MMMM yyyy, HH:mm')}">Дата приёма</strong><span class="medical-visit-badge">Завершён</span></div><div class="medical-visit-meta"><span th:text="${visit.doctor != null ? 'Врач: ' + visit.doctor.displayName : 'Врач не указан'}">Врач</span><span th:if="${visit.doctor != null and visit.doctor.specialty != null}" th:text="${visit.doctor.specialty.specialtyName}">Специальность</span><span th:if="${visit.department != null}" th:text="${visit.department.departmentName}">Отделение</span><span th:if="${visit.goal != null}" th:text="${visit.goal.name}">Цель</span></div><div th:each="record : ${visit.medicalRecords}" class="medical-record-detail"><p><strong>Диагноз:</strong> <span th:text="${record.diagnosis}">Диагноз</span></p><p th:if="${record.treatment != null and !record.treatment.isBlank()}"><strong>Лечение:</strong> <span th:text="${record.treatment}">Лечение</span></p><p th:if="${record.recommendations != null and !record.recommendations.isBlank()}"><strong>Рекомендации:</strong> <span th:text="${record.recommendations}">Рекомендации</span></p><p th:each="prescription : ${record.prescriptions}" th:text="${'Назначение: ' + prescription.medicationName + (prescription.dosage != null ? ' · ' + prescription.dosage : '') + (prescription.frequency != null ? ' · ' + prescription.frequency : '') + (prescription.durationDays != null ? ' · ' + prescription.durationDays + ' дн.' : '')}">Назначение</p></div></article></div></div>
+<div th:each="entry,stat : ${doctorGroups}" class="mt-5 medical-visit-panel" data-doctor-panel th:attr="data-doctor-index=${stat.index}" hidden><div class="medical-visits"><article th:each="visit : ${entry.value}" class="medical-visit"><div class="medical-visit-head"><strong th:text="${#temporals.format(visit.appointmentDate,'d MMMM yyyy, HH:mm')}">Дата приёма</strong><span class="medical-visit-badge">Завершён</span></div><div class="medical-visit-meta"><span th:if="${visit.department != null}" th:text="${visit.department.departmentName}">Отделение</span><span th:if="${visit.goal != null}" th:text="${visit.goal.name}">Цель обращения</span></div><div th:each="record : ${visit.medicalRecords}" class="medical-record-detail"><p><strong>Диагноз:</strong> <span th:text="${record.diagnosis}">Диагноз</span></p><p th:if="${record.treatment != null and !record.treatment.isBlank()}"><strong>Лечение:</strong> <span th:text="${record.treatment}">Лечение</span></p><p th:if="${record.recommendations != null and !record.recommendations.isBlank()}"><strong>Рекомендации:</strong> <span th:text="${record.recommendations}">Рекомендации</span></p><p th:each="prescription : ${record.prescriptions}" th:text="${'Назначение: ' + prescription.medicationName + (prescription.dosage != null ? ' · ' + prescription.dosage : '') + (prescription.frequency != null ? ' · ' + prescription.frequency : '') + (prescription.durationDays != null ? ' · ' + prescription.durationDays + ' дн.' : '')}">Назначение</p></div><p th:if="${visit.medicalRecords == null or visit.medicalRecords.isEmpty()}" class="medical-empty">Медицинский итог пока не добавлен.</p></article></div></div>
+</section>
+<section th:if="${medicalRecords != null and !medicalRecords.isEmpty()}" class="medical-pane"><h2>Медицинские итоги</h2><p class="medical-pane-intro">Ваши диагнозы, лечение и рекомендации.</p><div class="medical-visits"><article th:each="record : ${medicalRecords}" class="medical-visit"><div class="medical-visit-head"><strong th:text="${record.diagnosis}">Итог приёма</strong><time th:if="${record.createdDate != null}" class="medical-visit-badge" th:text="${#temporals.format(record.createdDate,'dd.MM.yyyy')}">Дата</time></div><p th:if="${record.treatment != null and !record.treatment.isBlank()}" class="mt-3 whitespace-pre-line text-sm text-slate-600" th:text="${record.treatment}">Лечение</p><p th:if="${record.recommendations != null and !record.recommendations.isBlank()}" class="mt-2 whitespace-pre-line text-sm text-slate-600" th:text="${record.recommendations}">Рекомендации</p><a th:if="${record.appointment != null and record.appointment.doctor != null}" th:href="@{/appointments}" class="mt-3 inline-flex text-sm font-semibold text-clinic-700">Врач: <span class="ml-1" th:text="${record.appointment.doctor.displayName}">Врач</span></a></article></div></section>
+<script>(()=>{const tabs=[...document.querySelectorAll('[data-overview-tab],[data-doctor-tab]')],overview=document.querySelector('[data-overview-panel]'),panels=[...document.querySelectorAll('[data-doctor-panel]')];const select=index=>{tabs.forEach(t=>t.setAttribute('aria-selected',String(t.hasAttribute('data-overview-tab')?index==='all':t.dataset.doctorIndex===index)));if(overview)overview.hidden=index!=='all';panels.forEach(p=>p.hidden=p.dataset.doctorIndex!==index);};tabs.forEach(t=>t.addEventListener('click',()=>select(t.hasAttribute('data-overview-tab')?'all':t.dataset.doctorIndex)));})();</script>
+</main></body></html>

@@ -3,6 +3,7 @@ package com.example.medicalsystem.controller;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import com.example.medicalsystem.service.AppointmentService;
 import com.example.medicalsystem.service.UserService;
+import com.example.medicalsystem.service.MedicalRecordService;
 import com.example.medicalsystem.model.Appointment;
 import com.example.medicalsystem.model.RoleEnum;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,10 +29,18 @@ public class MainController {
 
     private final AppointmentService appointmentService;
     private final UserService userService;
+    private final MedicalRecordService medicalRecordService;
 
-    public MainController(AppointmentService appointmentService, UserService userService) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public MainController(AppointmentService appointmentService, UserService userService,
+                          MedicalRecordService medicalRecordService) {
         this.appointmentService = appointmentService;
         this.userService = userService;
+        this.medicalRecordService = medicalRecordService;
+    }
+
+    public MainController(AppointmentService appointmentService, UserService userService) {
+        this(appointmentService, userService, null);
     }
 
     @GetMapping("/")
@@ -90,17 +99,29 @@ public class MainController {
         }
         if (doctorOnly) {
             var doctor = userService.findByUsername(principal.getUsername());
-            LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+            LocalDate todayDate = LocalDate.now(ZoneId.of("Europe/Moscow"));
+            LocalDateTime startOfToday = todayDate.atStartOfDay();
             LocalDateTime startOfTomorrow = startOfToday.plusDays(1);
             LocalDateTime startOfNextWeek = startOfToday.plusDays(7);
+            LocalDateTime now = LocalDateTime.now(ZoneId.of("Europe/Moscow"));
             var weekAppointments = appointmentService.findByDoctor(doctor.getIdUser()).stream()
                     .filter(appointment -> appointment.getAppointmentDate() != null
                             && !appointment.getAppointmentDate().isBefore(startOfToday)
                             && appointment.getAppointmentDate().isBefore(startOfNextWeek))
                     .filter(appointment -> "pending".equalsIgnoreCase(appointment.getStatus())
-                            || "confirmed".equalsIgnoreCase(appointment.getStatus()))
+                            || "confirmed".equalsIgnoreCase(appointment.getStatus())
+                            || ("completed".equalsIgnoreCase(appointment.getStatus())
+                            && appointment.getAppointmentDate().isBefore(now)))
                     .sorted(Comparator.comparing(com.example.medicalsystem.model.Appointment::getAppointmentDate))
                     .toList();
+            var appointmentIds = weekAppointments.stream().map(Appointment::getIdAppointment).toList();
+            var visitRecords = appointmentIds.isEmpty() || medicalRecordService == null
+                    ? List.<com.example.medicalsystem.model.MedicalRecord>of()
+                    : medicalRecordService.findByAppointments(appointmentIds);
+            var recordsByAppointment = visitRecords.stream().filter(record -> record.getAppointment() != null)
+                    .collect(Collectors.groupingBy(record -> record.getAppointment().getIdAppointment()));
+            weekAppointments.forEach(appointment -> appointment.setMedicalRecords(
+                    recordsByAppointment.getOrDefault(appointment.getIdAppointment(), List.of())));
             model.addAttribute("doctor", doctor);
             model.addAttribute("today", LocalDate.now());
             model.addAttribute("todayAppointments", weekAppointments.stream()

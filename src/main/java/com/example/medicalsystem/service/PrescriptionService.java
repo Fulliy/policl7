@@ -24,6 +24,9 @@ public class PrescriptionService {
     @Value("${app.demo-data.enabled:false}")
     private boolean demoDataEnabled;
 
+    @Value("${app.demo-data.reset:false}")
+    private boolean demoDataReset;
+
     public PrescriptionService(PrescriptionRepository repository,
                                MedicalRecordRepository medicalRecordRepository,
                                ServiceRepository serviceRepository) {
@@ -34,7 +37,7 @@ public class PrescriptionService {
 
     @PostConstruct
     public void init() {
-        if (!demoDataEnabled) {
+        if (!demoDataEnabled || demoDataReset) {
             return;
         }
         long count = repository.count();

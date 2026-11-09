@@ -20,13 +20,16 @@ public class SpecialtyService {
     @Value("${app.demo-data.enabled:false}")
     private boolean demoDataEnabled;
 
+    @Value("${app.demo-data.reset:false}")
+    private boolean demoDataReset;
+
     public SpecialtyService(SpecialtyRepository repository) {
         this.repository = repository;
     }
 
     @PostConstruct
     public void init() {
-        if (!demoDataEnabled) {
+        if (!demoDataEnabled || demoDataReset) {
             return;
         }
         long count = repository.count();

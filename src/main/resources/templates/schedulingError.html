@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Не удалось выполнить действие</title>
     <link rel="stylesheet" href="/app.css">
+    <style>body{background:#f5faf9}.error-shell{max-width:680px;margin:0 auto;border:1px solid #dcebe7;border-radius:24px;background:#fff;box-shadow:0 18px 42px #163e4814}.error-icon{display:grid;width:54px;height:54px;place-items:center;margin:0 auto;border-radius:16px;color:#a0444c;background:#fff1f1;font-size:25px;font-weight:800}.error-action{display:inline-flex;min-height:48px;align-items:center;padding:12px 18px;border-radius:11px;color:#fff;background:#087f79;font-weight:800;text-decoration:none}</style>
 </head>
 <body class="min-h-screen bg-slate-50 px-5 py-12">
-<main class="mx-auto max-w-xl rounded-2xl border border-rose-100 bg-white p-8 text-center shadow-sm">
-    <h1 class="text-xl font-semibold text-slate-800">Не удалось выполнить действие</h1>
-    <p class="mt-3 text-sm text-slate-600" th:text="${message}">Проверьте выбранное время.</p>
-    <a href="/appointments" class="mt-6 inline-flex rounded-xl bg-clinic-600 px-5 py-3 font-semibold text-white hover:bg-clinic-700">Вернуться к записям</a>
+<main class="error-shell p-8 text-center sm:p-10">
+    <span class="error-icon" aria-hidden="true">!</span>
+    <h1 class="mt-5 text-2xl font-bold text-ink">Не удалось выполнить действие</h1>
+    <p class="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-600" th:text="${message}">Проверьте выбранное время.</p>
+    <a href="/appointments" class="error-action mt-7">Вернуться к записям</a>
 </main>
 </body>
 </html>
