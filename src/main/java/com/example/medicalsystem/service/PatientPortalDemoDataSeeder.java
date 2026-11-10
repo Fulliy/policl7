@@ -36,6 +36,9 @@ public class PatientPortalDemoDataSeeder implements CommandLineRunner {
     @Value("${app.demo-data.enabled:false}")
     private boolean demoDataEnabled;
 
+    @Value("${app.demo-data.reset:false}")
+    private boolean demoDataReset;
+
     public PatientPortalDemoDataSeeder(UserRepository users,
                                        AppointmentRepository appointments,
                                        MedicalRecordRepository medicalRecords,
@@ -48,7 +51,7 @@ public class PatientPortalDemoDataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (!demoDataEnabled) return;
+        if (!demoDataEnabled || demoDataReset) return;
 
         List<User> patients = users.findAll().stream()
                 .filter(user -> user.getRoles() != null && user.getRoles().contains(RoleEnum.PATIENT))

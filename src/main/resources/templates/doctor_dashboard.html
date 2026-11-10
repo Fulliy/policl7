@@ -17,9 +17,10 @@
         .doctor-dashboard .doctor-meta span{padding:4px 8px;border-radius:7px;background:#f2f8f6}
         .doctor-dashboard .doctor-status{padding:5px 8px;border-radius:8px;color:#4a7772;background:#edf8f5;font-size:11px;font-weight:800}
         .doctor-dashboard .doctor-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
-        .doctor-dashboard .doctor-action{min-height:39px;padding:9px 12px;border:1px solid #cfe4df;border-radius:9px;color:#08716d;background:#fff;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap}
-        .doctor-dashboard .doctor-action:hover{background:#edf8f5}
-        .doctor-dashboard .doctor-action.primary{border-color:#087f79;color:#fff;background:#087f79}
+        .doctor-dashboard .doctor-action{min-height:48px;padding:12px 16px;border:2px solid #a3d3cb;border-radius:11px;color:#075e5a;background:#fff;font-size:14px;font-weight:800;text-decoration:none;white-space:nowrap;box-shadow:0 4px 12px rgba(22,62,72,.08)}
+        .doctor-dashboard .doctor-action:hover{background:#edf8f5;border-color:#087f79}
+        .doctor-dashboard .doctor-action.primary{min-height:54px;border-color:#087f79;color:#fff;background:#087f79;font-size:15px;box-shadow:0 6px 16px rgba(8,127,121,.22)}
+        .doctor-dashboard .doctor-action.primary:hover{color:#fff;background:#075e5a}
         .doctor-dashboard .doctor-panel{overflow:hidden;border:1px solid #dcece9;border-radius:19px;background:#fff;box-shadow:0 9px 24px #163e4809}
         .doctor-dashboard .doctor-panel-heading{padding:18px 22px;border-bottom:1px solid #edf3f2}
         .doctor-dashboard .doctor-panel-heading h2{margin:0;color:#163640;font-size:18px;font-weight:800}
@@ -38,7 +39,6 @@
         <article class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card"><p class="text-sm text-slate-500">Пациентов за неделю</p><p class="mt-2 text-3xl font-bold text-ink" th:text="${weekAppointments.size()}">12</p></article>
         <article class="rounded-2xl border border-[#dcece9] bg-white p-5 shadow-card"><p class="text-sm text-slate-500">Специальность</p><p class="mt-2 text-lg font-bold text-ink" th:text="${doctor.specialty != null ? doctor.specialty.specialtyName : 'Не указана'}">Терапевт</p></article>
     </section>
-    <p class="rounded-xl border border-[#dcece9] bg-[#f7fbfa] px-4 py-3 text-sm leading-6 text-slate-600">Откройте карту пациента, чтобы посмотреть его историю. Заполнить или изменить итог приёма можно после назначенного времени.</p>
 
     <section id="my-patients" class="doctor-panel" aria-labelledby="today-title">
         <div class="doctor-panel-heading flex flex-wrap items-center justify-between gap-3"><div><h2 id="today-title">Расписание на сегодня</h2><p>Пациенты, записанные к вам сегодня. Открывайте карту конкретного пациента прямо из расписания.</p></div><span class="rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${todayAppointments.size() + ' приёма'}">4 приёма</span></div>
@@ -46,7 +46,7 @@
             <article th:each="appointment : ${todayAppointments}" class="doctor-appointment">
                 <time class="doctor-time" th:text="${#temporals.format(appointment.appointmentDate, 'HH:mm')}">10:30</time>
                 <div><p class="doctor-patient-name" th:text="${appointment.user != null ? appointment.user.displayName : 'Пациент не указан'}">Петрова Анна Сергеевна</p><div class="doctor-meta"><span th:text="${appointment.department != null ? appointment.department.departmentName : 'Отделение не указано'}">Терапевтическое отделение</span><span class="doctor-status" th:text="${appointment.statusLabel}">Ожидает подтверждения</span></div><div th:if="${appointment.medicalRecords != null and !appointment.medicalRecords.isEmpty()}" class="mt-2 text-xs font-semibold text-[#087f79]">Итог уже заполнен</div></div>
-                <div class="doctor-actions"><a th:if="${appointment.user != null}" th:href="@{/doctor/patients/{id}(id=${appointment.user.idUser},appointmentId=${appointment.idAppointment})}" class="doctor-action primary">Открыть карту</a><span th:if="${appointment.medicalRecords != null and !appointment.medicalRecords.isEmpty()}" class="doctor-action">Итог заполнен</span></div>
+                <div class="doctor-actions"><a th:if="${appointment.user != null}" th:href="@{/doctor/patients/{id}(id=${appointment.user.idUser},appointmentId=${appointment.idAppointment})}" class="doctor-action primary">Открыть карту пациента</a><span th:if="${appointment.medicalRecords != null and !appointment.medicalRecords.isEmpty()}" class="doctor-action">Медитог заполнен</span></div>
             </article>
             <p th:if="${todayAppointments.isEmpty()}" class="doctor-empty">На сегодня приёмов нет.</p>
         </div>

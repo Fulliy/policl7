@@ -6,8 +6,10 @@
     <style>
         .patient-card-page { --card-ink:#163640; --card-muted:#60777b; --card-line:#dcebe7; --card-mint:#edf8f5; --card-teal:#087f79; --card-deep:#163e48; }
         .patient-card-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; padding:29px 32px; border-radius:26px; color:#fff; background:var(--card-deep); box-shadow:0 18px 42px rgba(22,62,72,.15); }
-        .patient-card-back { display:inline-flex; margin-bottom:19px; color:#b9ded8; font-size:13px; font-weight:700; text-decoration:none; }
-        .patient-card-back:hover { color:#fff; }
+        .patient-card-back { display:inline-flex; min-height:48px; align-items:center; gap:8px; margin-bottom:19px; padding:11px 16px; border:1px solid #a9d8d0; border-radius:11px; color:#075e5a; background:#edf8f5; font-size:15px; font-weight:800; text-decoration:none; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+        .patient-card-back:hover { color:#163640; background:#fff; }
+        .patient-card-hero .patient-card-back { color:#075e5a; background:#fff; border-color:#fff; }
+        .patient-card-hero .patient-card-back:hover { color:#fff; background:#087f79; border-color:#087f79; }
         .patient-card-hero h1 { margin:0; color:#fff !important; font-size:clamp(2rem,4vw,3rem); line-height:1.06; letter-spacing:-.045em; }
         .patient-card-hero p { margin:10px 0 0; color:#d3e8e4; font-size:14px; }
         .patient-avatar-large { display:grid; width:76px; height:76px; flex:none; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:22px; color:#16454c; background:#c8ebe3; font-size:24px; font-weight:800; }
@@ -31,9 +33,11 @@
         .visit-record p { margin:8px 0 0; color:#486266; font-size:13px; line-height:1.55; white-space:pre-line; }
         .visit-record strong { color:var(--card-ink); }
         .record-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:13px; }
-        .record-action { display:inline-flex; min-height:36px; align-items:center; padding:8px 11px; border:1px solid #bfe0d9; border-radius:9px; color:var(--card-teal); background:#fff; font-size:12px; font-weight:800; text-decoration:none; }
-        .record-action:hover { background:var(--card-mint); }
-        .record-action.primary { color:#fff; background:var(--card-teal); border-color:var(--card-teal); }
+        .record-action { display:inline-flex; min-height:46px; align-items:center; justify-content:center; padding:11px 16px; border:2px solid #9fcfc7; border-radius:11px; color:#075e5a; background:#fff; font-size:14px; font-weight:800; text-decoration:none; cursor:pointer; box-shadow:0 4px 12px rgba(22,62,72,.08); }
+        .record-action:hover { background:var(--card-mint); border-color:var(--card-teal); }
+        .record-action.primary { min-height:52px; color:#fff; background:var(--card-teal); border-color:var(--card-teal); font-size:15px; box-shadow:0 6px 16px rgba(8,127,121,.24); }
+        .record-action.primary:hover { color:#fff; background:#075e5a; }
+        .record-actions form { margin:0; }
         .prescriptions { display:grid; gap:7px; margin-top:12px; }
         .prescription { padding:10px 11px; border-radius:9px; background:#fff; color:#486266; font-size:12px; }
         .prescription strong { display:block; color:var(--card-ink); font-size:13px; }
@@ -55,12 +59,13 @@
     <section th:if="${selectedVisit != null}" class="card-section" style="margin-bottom:18px;border-color:#acd8d0;background:#f7fcfa">
         <h2>Приём из расписания</h2>
         <p class="card-section-intro" th:text="${#temporals.format(selectedVisit.appointmentDate, 'd MMMM yyyy, HH:mm') + ' · ' + selectedVisit.statusLabel}">Сегодняшний приём</p>
-        <p class="side-note" th:if="${selectedVisit.appointmentDate != null and selectedVisit.appointmentDate.isAfter(now)}">Время приёма ещё не наступило. Карта доступна для просмотра, а заполнение медицинского итога откроется после назначенного времени.</p>
+        <p class="side-note" th:if="${selectedVisit.appointmentDate != null and selectedVisit.appointmentDate.isAfter(now)}">Время приёма ещё не наступило. После него появится кнопка завершения приёма и заполнения медицинского итога.</p>
         <div class="record-actions">
             <form th:if="${selectedVisit.appointmentDate != null and !selectedVisit.appointmentDate.isAfter(now) and (selectedVisit.status == 'pending' or selectedVisit.status == 'confirmed')}" th:action="@{/appointments/{id}/complete(id=${selectedVisit.idAppointment})}" method="post"><input th:if="${_csrf != null}" type="hidden" name="_csrf" th:value="${_csrf.token}"><button type="submit" class="record-action primary">Завершить приём и открыть итог</button></form>
             <a th:if="${selectedVisit.appointmentDate != null and !selectedVisit.appointmentDate.isAfter(now) and (selectedVisit.medicalRecords == null or selectedVisit.medicalRecords.isEmpty()) and selectedVisit.status == 'completed'}" th:href="@{/medicalRecords/new(appointmentId=${selectedVisit.idAppointment})}" class="record-action primary">Заполнить итог этого приёма</a>
             <a th:if="${selectedVisit.status == 'completed'}" th:each="record : ${selectedVisit.medicalRecords}" th:href="@{/medicalRecords/{id}/edit(id=${record.idRecord})}" class="record-action primary">Обновить медицинский итог</a>
-            <a th:href="@{/appointments/{id}/edit(id=${selectedVisit.idAppointment})}" class="record-action">Открыть детали приёма</a>
+            <a th:href="@{/appointments/{id}/details(id=${selectedVisit.idAppointment})}" class="record-action">Просмотреть детали приёма</a>
+            <a th:href="@{/appointments/{id}/edit(id=${selectedVisit.idAppointment})}" class="record-action">Редактировать приём</a>
         </div>
     </section>
 
@@ -90,7 +95,6 @@
 
         <aside class="side-stack">
             <section class="card-section"><h2>Данные пациента</h2><div class="patient-fact"><span>ФИО</span><strong th:text="${patient.displayName}">Пациент</strong></div><div class="patient-fact" th:if="${patient.birthDate != null}"><span>Дата рождения</span><strong th:text="${#temporals.format(patient.birthDate, 'dd.MM.yyyy')}">01.01.1990</strong></div><div class="patient-fact" th:if="${patient.phone != null and !patient.phone.isBlank()}"><span>Телефон</span><strong th:text="${patient.phone}">Телефон</strong></div><div class="patient-fact" th:if="${patient.policyNumber != null and !patient.policyNumber.isBlank()}"><span>Полис</span><strong th:text="${patient.policyNumber}">Полис</strong></div></section>
-            <section class="card-section"><h2>Как работать с картой</h2><p class="side-note">После завершённого приёма заполните диагноз, лечение и рекомендации. Назначения отображаются внутри соответствующего итога приёма.</p></section>
         </aside>
     </div>
 </main>

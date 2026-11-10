@@ -144,6 +144,11 @@ button:focus-visible, a:focus-visible {
 }
 button:disabled, input:disabled, select:disabled, textarea:disabled { cursor: not-allowed; opacity: .65; }
 button, .btn, .link-btn { min-height: 44px; }
+/* High-contrast, large action controls for the clinic's older and low-vision users. */
+main .btn-primary, main .btn-save, main button[type="submit"], main a[class*="bg-clinic-500"] { min-height: 50px; padding: 12px 18px; font-size: 15px; font-weight: 800; }
+main .back-link { display: inline-flex; min-height: 46px; align-items: center; padding: 10px 15px; border: 2px solid #a3d3cb; border-radius: 11px; background: #edf8f5; color: #075e5a !important; font-size: 15px; font-weight: 800; text-decoration: none; }
+main .back-link:hover { background: #fff; border-color: #087f79; }
+main [data-coming-soon] { cursor: pointer; }
 table { border-radius: var(--clinic-radius) !important; overflow: hidden; }
 th { font-size: var(--clinic-label-size); }
 tbody tr { transition: background-color .16s ease; }

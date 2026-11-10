@@ -251,15 +251,37 @@ public class AppointmentController {
         return java.util.Map.of("message", "Запись перенесена.", "redirectUrl", "/appointments");
     }
 
+    @GetMapping("/{id}/details")
+    public String showDetails(@PathVariable Integer id, Model model,
+                              @AuthenticationPrincipal UserDetails principal) {
+        Appointment appointment = appointmentService.findById(id);
+        ensureOwnerOrStaff(appointment, principal);
+        if (hasAuthority(principal, "DOCTOR")) ensureDoctorOwnsAppointment(appointment, principal);
+        User currentDoctor = hasAuthority(principal, "DOCTOR")
+                ? userService.findByUsername(principal.getUsername()) : null;
+        model.addAttribute("appointment", appointment);
+        model.addAttribute("isDoctor", currentDoctor != null);
+        model.addAttribute("isAdmin", hasAuthority(principal, "ADMIN"));
+        model.addAttribute("returnUrl", currentDoctor != null && appointment.getUser() != null
+                ? "/doctor/patients/" + appointment.getUser().getIdUser() + "?appointmentId=" + id
+                : "/appointments");
+        return "appointmentDetails";
+    }
+
     @GetMapping("/{id}/edit")
-    public String showEditForm(@PathVariable Integer id, Model model,
+    public String showEditForm(@PathVariable Integer id,
+                               @RequestParam(required = false) String returnUrl,
+                               Model model,
                                @AuthenticationPrincipal UserDetails principal) {
         Appointment appointment = appointmentService.findById(id);
         ensureOwnerOrStaff(appointment, principal);
-        if (!hasAuthority(principal, "ADMIN") && !hasAuthority(principal, "DOCTOR")) ensurePatientCanModify(appointment, principal);
-        if (hasAuthority(principal, "DOCTOR")) ensureDoctorOwnsAppointment(appointment, principal);
+        boolean administrator = hasAuthority(principal, "ADMIN");
+        boolean doctor = hasAuthority(principal, "DOCTOR");
+        if (!administrator && !doctor) ensurePatientCanModify(appointment, principal);
+        if (doctor) ensureDoctorOwnsAppointment(appointment, principal);
         model.addAttribute("appointment", appointment);
         addFormOptions(model, principal);
+        addAppointmentReturnContext(model, appointment, principal, returnUrl);
         return "appointmentForm";
     }
 
@@ -267,14 +289,17 @@ public class AppointmentController {
     public String update(@RequestParam Integer id,
                          @RequestParam(name = "serviceIds", required = false) java.util.List<Integer> serviceIds,
                          @RequestParam(name = "doctorId", required = false) Integer doctorId,
+                         @RequestParam(required = false) String returnUrl,
                          @ModelAttribute("appointment") Appointment appointment,
                          BindingResult result,
                          Model model,
                          @AuthenticationPrincipal UserDetails principal) {
         Appointment existing = appointmentService.findById(id);
         ensureOwnerOrStaff(existing, principal);
-        if (!hasAuthority(principal, "ADMIN") && !hasAuthority(principal, "DOCTOR")) ensurePatientCanModify(existing, principal);
-        if (hasAuthority(principal, "DOCTOR")) ensureDoctorOwnsAppointment(existing, principal);
+        boolean administrator = hasAuthority(principal, "ADMIN");
+        boolean doctor = hasAuthority(principal, "DOCTOR");
+        if (!administrator && !doctor) ensurePatientCanModify(existing, principal);
+        if (doctor) ensureDoctorOwnsAppointment(existing, principal);
         if (isPatientOnly(principal)) {
             if (existing.isRequiresReschedule()) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
@@ -292,6 +317,7 @@ public class AppointmentController {
             appointment.setIdAppointment(id);
             model.addAttribute("appointment", appointment);
             addFormOptions(model, principal);
+            addAppointmentReturnContext(model, existing, principal, returnUrl);
             return "appointmentForm";
         }
         appointment.setIdAppointment(id);
@@ -301,8 +327,9 @@ public class AppointmentController {
             appointment.setGoal(existing.getGoal());
             appointment.setBranch(existing.getBranch());
         }
-        appointmentService.saveBooking(appointment, null, hasAuthority(principal, "ADMIN"), false);
-        return "redirect:/appointments";
+        appointmentService.saveBooking(appointment, null, administrator, false);
+        String safeReturnUrl = safeAppointmentReturnUrl(existing, principal, returnUrl);
+        return safeReturnUrl == null ? "redirect:/appointments" : "redirect:" + safeReturnUrl;
     }
 
     @PostMapping("/{id}/complete")
@@ -409,6 +436,42 @@ public class AppointmentController {
         });
     }
 
+    private void addAppointmentReturnContext(Model model, Appointment appointment,
+                                             UserDetails principal, String requestedReturnUrl) {
+        String returnUrl = requestedReturnUrl;
+        returnUrl = safeAppointmentReturnUrl(appointment, principal, returnUrl);
+        model.addAttribute("appointmentReturnUrl", returnUrl);
+    }
+
+    private String safeAppointmentReturnUrl(Appointment appointment, UserDetails principal, String requestedUrl) {
+        if (hasAuthority(principal, "DOCTOR")) return appointmentReturnUrl(appointment, principal);
+        if (hasAuthority(principal, "ADMIN") && requestedUrl != null && appointment != null
+                && appointment.getUser() != null) {
+            String patientUrl = "/admin/registry/patients/" + appointment.getUser().getIdUser();
+            if (requestedUrl.equals(patientUrl + "?section=patients")
+                    || requestedUrl.equals(patientUrl + "?section=doctors")) return requestedUrl;
+            if (appointment.getDoctor() != null) {
+                String doctorUrl = "/admin/registry/doctors/" + appointment.getDoctor().getIdUser();
+                if (requestedUrl.equals(doctorUrl + "?section=patients")
+                        || requestedUrl.equals(doctorUrl + "?section=doctors")) return requestedUrl;
+            }
+            return null;
+        }
+        return appointmentReturnUrl(appointment, principal);
+    }
+
+    private String appointmentReturnUrl(Appointment appointment, UserDetails principal) {
+        if (appointment == null || appointment.getUser() == null || principal == null) return null;
+        if (hasAuthority(principal, "ADMIN")) {
+            return "/admin/registry/patients/" + appointment.getUser().getIdUser() + "?section=patients";
+        }
+        if (hasAuthority(principal, "DOCTOR")) {
+            return "/doctor/patients/" + appointment.getUser().getIdUser()
+                    + "?appointmentId=" + appointment.getIdAppointment();
+        }
+        return null;
+    }
+
     private void ensureDoctorOwnsAppointment(Appointment appointment, UserDetails principal) {
         User doctor = userService.findByUsername(principal.getUsername());
         if (appointment == null || appointment.getDoctor() == null || doctor == null
@@ -462,11 +525,8 @@ public class AppointmentController {
             result.reject("appointment.goal.required", "Выберите цель обращения.");
             return;
         }
-        if (goal.getScenarioType() == AppointmentGoal.ScenarioType.EXTERNAL
-                || (goal.isPaid() && !paidConsent)) {
-            result.reject("appointment.goal.consent", goal.isPaid()
-                    ? "Подтвердите согласие с условиями платной услуги."
-                    : "Эта цель оформляется через внешнюю организацию.");
+        if (goal.isPaid() && !paidConsent) {
+            result.reject("appointment.goal.consent", "Подтвердите согласие с условиями платной услуги.");
             return;
         }
         if (goal.getScenarioType() == AppointmentGoal.ScenarioType.PAID_SERVICE
@@ -491,15 +551,19 @@ public class AppointmentController {
         appointment.setBranch(branch);
         List<Department> departments = appointment.getDoctor().getDoctorDepartments() == null
                 ? List.of() : appointment.getDoctor().getDoctorDepartments();
-        if (!departments.isEmpty() && (appointment.getDepartment() == null || departments.stream()
-                .noneMatch(item -> item.getIdDepartment().equals(appointment.getDepartment().getIdDepartment())))) {
+        if (!departments.isEmpty() && appointment.getDepartment() != null && departments.stream()
+                .noneMatch(item -> item.getIdDepartment().equals(appointment.getDepartment().getIdDepartment()))) {
             result.reject("appointment.department.invalid", "Врач не принимает в выбранном отделении.");
         }
-        if (goal.getScenarioType() == AppointmentGoal.ScenarioType.ORVI_DUTY && !appointment.getDoctor().isOnDutyOrvi()) {
-            result.reject("appointment.doctor.orvi", "Для этой цели доступны только дежурные врачи ОРВИ.");
+        if (appointment.getDepartment() == null && !departments.isEmpty()) {
+            appointment.setDepartment(departments.get(0));
         }
-        // Все врачи с доступным расписанием подходят для внутренних целей записи.
+        // Для любой цели можно выбрать любого врача; цель описывает намерение пациента,
+        // а врач и его филиал определяют фактическое место приёма.
         // Фильтр по дежурству остаётся только для специального сценария ОРВИ.
+        if (goal.getScenarioType() == AppointmentGoal.ScenarioType.ORVI_DUTY && !appointment.getDoctor().isOnDutyOrvi()) {
+            result.reject("appointment.doctor.orvi", "Для симптомов простуды выберите дежурного врача ОРВИ.");
+        }
         if (goal.getScenarioType() == AppointmentGoal.ScenarioType.ORVI_DUTY && appointment.getAppointmentDate() != null
                 && appointment.getAppointmentDate().isAfter(LocalDateTime.now(ZoneId.of("Europe/Moscow"))
                 .plusDays(Math.min(schedulingProperties == null ? 7 : Math.min(schedulingProperties.getOrviAdvanceDays(), 7), 7)))) {
@@ -527,11 +591,10 @@ public class AppointmentController {
         AppointmentGoal goal = goalRepository == null ? null : goalRepository.findById(goalId).orElse(null);
         if (goal == null || !goal.isActive()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Цель обращения не найдена.");
         List<User> candidates = findDoctors();
-        if (goal.getScenarioType() == AppointmentGoal.ScenarioType.EXTERNAL) return List.of();
         if (goal.getScenarioType() == AppointmentGoal.ScenarioType.ORVI_DUTY) {
             candidates = candidates.stream().filter(User::isOnDutyOrvi).toList();
         }
-        int horizon = goal.getScenarioType() == AppointmentGoal.ScenarioType.ORVI_DUTY ? 3 : 30;
+        int horizon = goal.getScenarioType() == AppointmentGoal.ScenarioType.ORVI_DUTY ? 7 : 30;
         return candidates.stream().filter(doctor -> doctor.getBranches() != null && !doctor.getBranches().isEmpty())
                 .map(doctor -> bookingDoctor(doctor, horizon)).toList();
     }

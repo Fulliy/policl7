@@ -24,8 +24,9 @@
         .record-patient p { margin:5px 0 0; color:var(--records-muted); font-size:13px; }
         .record-patient-meta { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
         .record-tag { padding:5px 9px; border-radius:8px; color:#4d7774; background:var(--records-mint); font-size:12px; }
-        .record-open { min-height:42px; padding:10px 14px; border-radius:10px; color:#fff; background:var(--records-teal); font-size:13px; font-weight:800; text-decoration:none; white-space:nowrap; }
+        .record-open { min-height:52px; display:inline-flex; align-items:center; justify-content:center; padding:12px 17px; border:2px solid var(--records-teal); border-radius:11px; color:#fff; background:var(--records-teal); font-size:14px; font-weight:800; text-decoration:none; white-space:nowrap; box-shadow:0 6px 16px rgba(8,127,121,.2); }
         .record-open:hover { background:#075e5a; }
+        .record-open:focus-visible { outline:4px solid #087f7955; outline-offset:3px; }
         .patient-latest-result{display:inline-flex;align-items:center;gap:6px;margin-top:9px;padding:5px 9px;border-radius:8px;color:#557477;background:#f1f8f6;font-size:12px}
         .patient-latest-result.done{color:#08716d;background:#e8f7f4}
         .records-empty { padding:42px 20px; border:1px dashed #b6d8d1; border-radius:18px; color:var(--records-muted); background:#fbfefd; text-align:center; }
@@ -39,7 +40,7 @@
     </section>
 
     <section class="records-toolbar">
-        <div><h2>Ваши пациенты</h2><p>История визитов, текущие записи и готовность медицинских итогов.</p></div>
+        <div><h2>Ваши пациенты</h2></div>
         <input id="patientSearch" class="records-search" type="search" placeholder="Поиск по ФИО" aria-label="Поиск пациента">
     </section>
 

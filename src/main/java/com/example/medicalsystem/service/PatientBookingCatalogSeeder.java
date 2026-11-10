@@ -22,17 +22,19 @@ public class PatientBookingCatalogSeeder implements CommandLineRunner {
     private final SpecialtyRepository specialties;
     private final UserRepository users;
     private final boolean enabled;
+    private final boolean reset;
 
     public PatientBookingCatalogSeeder(AppointmentGoalRepository goals, ClinicBranchRepository branches,
                                        SpecialtyRepository specialties, UserRepository users,
-                                       @Value("${app.demo-data.enabled:false}") boolean enabled) {
+                                       @Value("${app.demo-data.enabled:false}") boolean enabled,
+                                       @Value("${app.demo-data.reset:false}") boolean reset) {
         this.goals = goals; this.branches = branches; this.specialties = specialties; this.users = users;
-        this.enabled = enabled;
+        this.enabled = enabled; this.reset = reset;
     }
 
     @Override @Transactional
     public void run(String... args) {
-        if (!enabled) return;
+        if (!enabled || reset) return;
         goals.findFirstByNameIgnoreCase("Единое окно").ifPresent(goal -> {
             goal.setActive(false);
             goals.save(goal);

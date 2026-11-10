@@ -73,8 +73,8 @@
                 <div class="flex flex-wrap items-center gap-2 sm:justify-end">
                     <span th:if="${!(visitPeriod == 'past' and appointment.status != null and appointment.status.equalsIgnoreCase('pending'))}" class="mr-1 rounded-full bg-clinic-50 px-3 py-1 text-xs font-semibold text-clinic-700" th:text="${appointment.statusLabel}">Ожидает подтверждения</span>
                     <th:block th:if="${visitPeriod != 'past' and appointment.appointmentDate != null and appointment.appointmentDate.isAfter(now) and (appointment.status == 'pending' or appointment.status == 'confirmed')}">
-                        <a th:href="@{/appointments/{id}/reschedule(id=${appointment.idAppointment})}" class="rounded-lg border border-clinic-100 px-3 py-2 text-xs font-semibold text-clinic-700 transition hover:bg-clinic-50">Перенести</a>
-                        <form th:if="${isPatientOnly}" th:action="@{/appointments/{id}/cancel(id=${appointment.idAppointment})}" method="post"><button type="submit" class="rounded-lg border border-rose-100 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">Отменить</button></form>
+                        <a th:href="@{/appointments/{id}/reschedule(id=${appointment.idAppointment})}" class="rounded-lg border-2 border-clinic-100 bg-clinic-50 px-4 py-3 text-sm font-bold text-clinic-700 transition hover:bg-clinic-100">Перенести запись</a>
+                        <form th:if="${isPatientOnly}" th:action="@{/appointments/{id}/cancel(id=${appointment.idAppointment})}" method="post"><button type="submit" class="rounded-lg border-2 border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 transition hover:bg-rose-100">Отменить запись</button></form>
                     </th:block>
                 </div>
             </article>

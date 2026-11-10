@@ -125,7 +125,7 @@
                         type="button" class="booking-goal" data-goal-card
                         th:attr="data-goal-id=${goal.id},data-goal-name=${goal.name},data-scenario=${goal.scenarioType},data-description=${goal.description},data-external-url=${goal.externalUrl},data-icon=${goal.iconKey}">
                     <span class="booking-goal-icon" data-icon-slot aria-hidden="true"></span>
-                    <span class="booking-goal-copy"><strong th:text="${goal.name}">Цель обращения</strong><span>Запись проходит через другую организацию</span></span>
+                    <span class="booking-goal-copy"><strong th:text="${goal.name}">Цель обращения</strong><span>Можно выбрать любого врача; филиал и адрес указаны в карточке</span></span>
                     <span class="booking-chevron" aria-hidden="true">›</span>
                 </button>
             </div>
@@ -140,10 +140,8 @@
             <div id="doctorLoading" class="booking-loading"><span class="booking-spinner" aria-hidden="true"></span><span>Ищем доступных врачей…</span></div>
             <div id="doctorList" class="booking-doctors" hidden></div>
             <div id="externalPanel" class="booking-external" hidden>
-                <h3 id="externalTitle">Эта запись оформляется отдельно</h3>
-                <p id="externalDescription"></p>
-                <a id="externalLink" href="#" target="_blank" rel="noopener noreferrer" hidden>Перейти к записи</a>
-                <p id="externalSoon" class="booking-muted-note" hidden>Ссылка для записи пока не добавлена. Обратитесь в регистратуру.</p>
+                <h3>Возможен другой адрес приёма</h3>
+                <p>Вы можете выбрать врача и свободное время. Точный филиал и адрес будут указаны в карточке врача.</p>
             </div>
             <div id="doctorEmpty" class="booking-empty" hidden>По этой цели пока нет доступных врачей. Попробуйте другую цель или обратитесь в регистратуру.</div>
         </section>
@@ -268,14 +266,12 @@
 
             async function selectGoal(goal) {
                 clearError(); resetDoctorState(); state.goal = goal; $('bookingGoalId').value = goal.goalId;
-                setText('doctorStepSubtitle', `Цель: ${goalName(goal)}. Выберите врача из списка.`); setStep(2);
-                show($('doctorLoading')); hide($('doctorList')); hide($('doctorEmpty')); hide($('externalPanel'));
-                if (goal.scenario === 'EXTERNAL') {
-                    hide($('doctorLoading')); show($('externalPanel')); setText('externalTitle', goalName(goal)); setText('externalDescription', goal.description || 'Для этой цели запись проходит через другую медицинскую организацию.');
-                    const link = $('externalLink'); const soon = $('externalSoon');
-                    if (goal.externalUrl) { link.href = goal.externalUrl; show(link); hide(soon); } else { link.removeAttribute('href'); hide(link); show(soon); }
-                    return;
-                }
+                const externalNotice = goal.scenario === 'EXTERNAL'
+                    ? 'Выберите врача поликлиники. Приём может проходить в другом филиале или по другому адресу — точное место указано в карточке врача.'
+                    : 'Выберите врача из списка.';
+                setText('doctorStepSubtitle', `Цель: ${goalName(goal)}. ${externalNotice}`); setStep(2);
+                show($('doctorLoading')); hide($('doctorList')); hide($('doctorEmpty'));
+                if (goal.scenario === 'EXTERNAL') show($('externalPanel')); else hide($('externalPanel'));
                 const request = ++state.request;
                 try {
                     const doctors = await fetchJson(`/appointments/booking/goals/${encodeURIComponent(goal.goalId)}/doctors`);
@@ -343,7 +339,7 @@
             }
 
             function updateSelection() {
-                const ready = Boolean(state.date && state.time && state.doctor && state.goal && state.goal.scenario !== 'EXTERNAL');
+                const ready = Boolean(state.date && state.time && state.doctor && state.goal);
                 $('bookingSubmit').disabled = !ready;
                 setText('selectionSummary', ready ? `${dateLabel(state.date)}, ${state.time}` : 'Выберите дату и время приёма.');
             }

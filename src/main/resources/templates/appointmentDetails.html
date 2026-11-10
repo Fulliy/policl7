@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: portalPage('Детали приёма', 'appointments', ~{::content})}">
+<body>
+<main th:fragment="content" class="appointment-details-page space-y-6">
+    <style>
+        .appointment-details-page{--d-ink:#163640;--d-muted:#60777b;--d-line:#dcebe7;--d-teal:#087f79;max-width:900px;margin:0 auto}
+        .details-hero{padding:26px 30px;border-radius:22px;color:#fff;background:#163e48}
+        .details-hero h1{margin:0;color:#fff!important;font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.1}
+        .details-hero p{margin:8px 0 0;color:#d6e9e5;font-size:15px}
+        .details-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+        .details-button{display:inline-flex;min-height:50px;align-items:center;justify-content:center;padding:12px 17px;border:2px solid #a3d3cb;border-radius:11px;color:#075e5a;background:#edf8f5;font-size:15px;font-weight:800;text-decoration:none;box-shadow:0 4px 12px rgba(22,62,72,.08)}
+        .details-button.primary{border-color:#087f79;color:#fff;background:#087f79}
+        .details-button:hover{filter:brightness(.97)}
+        .details-panel{margin-top:18px;padding:24px;border:1px solid var(--d-line);border-radius:19px;background:#fff;box-shadow:0 10px 27px rgba(22,62,72,.06)}
+        .details-panel h2{margin:0 0 16px;color:var(--d-ink)!important;font-size:20px}
+        .details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 22px}
+        .details-row{padding:14px 0;border-bottom:1px solid #edf3f2}
+        .details-row span{display:block;color:var(--d-muted);font-size:13px}
+        .details-row strong{display:block;margin-top:5px;color:var(--d-ink);font-size:16px;line-height:1.45;white-space:pre-line}
+        .details-note{margin-top:17px;padding:15px;border-left:4px solid var(--d-teal);border-radius:0 11px 11px 0;background:#edf8f5;color:#395e5e;font-size:15px;line-height:1.5}
+        .details-back{display:inline-flex;min-height:48px;align-items:center;padding:10px 15px;border:2px solid #a3d3cb;border-radius:11px;color:#075e5a;background:#edf8f5;font-size:15px;font-weight:800;text-decoration:none}
+        .appointment-details-page a:focus-visible{outline:4px solid #087f7955;outline-offset:3px}
+        @media(max-width:650px){.details-hero{padding:23px 20px}.details-panel{padding:18px 16px}.details-grid{grid-template-columns:1fr}.details-actions{flex-direction:column}.details-button{width:100%}}
+    </style>
+    <section class="details-hero">
+        <h1>Детали приёма</h1>
+        <p th:text="${appointment.user != null ? appointment.user.displayName : 'Пациент не указан'}">Пациент</p>
+        <div class="details-actions">
+            <a class="details-button" th:href="${returnUrl}" th:text="${isDoctor ? 'Вернуться к карте пациента' : 'Вернуться к списку записей'}">Вернуться</a>
+            <a th:if="${isDoctor or isAdmin}" class="details-button primary" th:href="@{/appointments/{id}/edit(id=${appointment.idAppointment})}">Редактировать приём</a>
+        </div>
+    </section>
+    <section class="details-panel">
+        <h2>Информация о приёме</h2>
+        <div class="details-grid">
+            <div class="details-row"><span>Дата и время</span><strong th:text="${appointment.appointmentDate != null ? #temporals.format(appointment.appointmentDate,'d MMMM yyyy, HH:mm') : 'Не указаны'}">Дата и время</strong></div>
+            <div class="details-row"><span>Статус</span><strong th:text="${appointment.statusLabel}">Ожидает подтверждения</strong></div>
+            <div class="details-row"><span>Пациент</span><strong th:text="${appointment.user != null ? appointment.user.displayName : 'Не указан'}">Пациент</strong></div>
+            <div class="details-row"><span>Врач</span><strong th:text="${appointment.doctor != null ? appointment.doctor.displayName : 'Не назначен'}">Врач</strong></div>
+            <div class="details-row"><span>Специальность</span><strong th:text="${appointment.doctor != null and appointment.doctor.specialty != null ? appointment.doctor.specialty.specialtyName : 'Не указана'}">Специальность</strong></div>
+            <div class="details-row"><span>Отделение</span><strong th:text="${appointment.department != null ? appointment.department.departmentName : 'Не указано'}">Отделение</strong></div>
+            <div class="details-row"><span>Филиал</span><strong th:text="${appointment.branch != null ? appointment.branch.name : 'Не указан'}">Филиал</strong></div>
+            <div class="details-row"><span>Адрес</span><strong th:text="${appointment.branch != null ? appointment.branch.address : 'Уточните в регистратуре'}">Адрес</strong></div>
+            <div class="details-row"><span>Цель обращения</span><strong th:text="${appointment.goal != null ? appointment.goal.name : 'Не указана'}">Цель</strong></div>
+            <div class="details-row"><span>Длительность</span><strong th:text="${appointment.durationMinutes != null ? appointment.durationMinutes + ' минут' : 'Не указана'}">30 минут</strong></div>
+        </div>
+        <div class="details-note"><strong>Причина обращения</strong><br><span th:text="${appointment.complaint != null and !appointment.complaint.isBlank() ? appointment.complaint : 'Не указана'}">Жалоба</span></div>
+    </section>
+</main>
+</body>
+</html>

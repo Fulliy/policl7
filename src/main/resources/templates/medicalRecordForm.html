@@ -26,7 +26,8 @@
 <div class="container">
     <a th:if="${isDoctor and medicalRecord.appointment != null}" th:href="@{/doctor/patients/{id}(id=${medicalRecord.appointment.user.idUser},appointmentId=${medicalRecord.appointment.idAppointment})}" style="display:inline-block;margin-bottom:14px;color:#087f79;font-weight:700;text-decoration:none">← Вернуться к карте пациента</a>
     <div class="card">
-        <h2 th:text="${medicalRecord.idRecord} != null ? 'Редактирование записи' : 'Новая запись'"></h2>
+        <h2 th:text="${medicalRecord.idRecord} != null ? 'Редактирование медицинского итога' : 'Новый медицинский итог'"></h2>
+        <p th:if="${isDoctor}" style="margin:-12px 0 22px;color:#60777b;font-size:14px">Заполните диагноз, лечение и рекомендации по этому приёму.</p>
         <form th:action="${medicalRecord.idRecord} != null ? '/medicalRecords/update' : '/medicalRecords/save'" th:object="${medicalRecord}" method="post">
             <input type="hidden" name="id" th:value="${medicalRecord.idRecord}" th:if="${medicalRecord.idRecord != null}">
             <div class="form-group"><label>Диагноз</label><textarea th:field="*{diagnosis}"></textarea><div class="error" th:if="${#fields.hasErrors('diagnosis')}" th:errors="*{diagnosis}"></div></div>

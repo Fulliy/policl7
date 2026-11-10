@@ -35,6 +35,7 @@
         .btn { flex: 1; min-height:50px; padding:12px 18px; border-radius:11px; font-size:15px; font-weight:800; cursor:pointer; text-align:center; text-decoration:none; border:none; }
         .btn-save { background: #3b82f6; color: white; }
         .btn-cancel { background: #9ca3af; color: white; }
+        .return-link{display:inline-flex;min-height:48px;align-items:center;margin-bottom:16px;padding:10px 15px;border:2px solid #a3d3cb;border-radius:11px;background:#edf8f5;color:#075e5a;font-size:15px;font-weight:800;text-decoration:none}.return-link:hover{background:#fff;border-color:#087f79}
         .type-switch { display:flex; gap:4px; padding:4px; margin-bottom:22px; border-radius:12px; background:var(--clinic-primary-soft); }
         .type-switch button { flex:1; min-height:46px; border:0; border-radius:9px; padding:11px 8px; color:var(--clinic-primary-dark); background:transparent; cursor:pointer; font-size:14px; font-weight:800; }
         .type-switch button.active { color:white; background:var(--clinic-primary); box-shadow:0 3px 10px #0e8f8933; }
@@ -83,10 +84,13 @@
 </head>
 <body>
 <div class="container">
+    <a th:if="${appointmentReturnUrl != null}" class="return-link" th:href="${appointmentReturnUrl}" th:text="${appointmentReturnUrl != null and #strings.contains(appointmentReturnUrl, '/doctors/') ? '← Вернуться к карточке врача' : '← Вернуться к карточке пациента'}">← Вернуться к карточке</a>
     <div class="card">
-        <h2 th:text="${appointment.idAppointment != null} ? 'Редактирование записи' : 'Новая запись на прием'"></h2>
+        <h2 th:text="${appointment.idAppointment != null} ? 'Редактирование записи на приём' : 'Новая запись на приём'"></h2>
+        <p th:if="${appointment.idAppointment != null and !isPatientOnly}" style="margin:-12px 0 22px;color:#60777b;font-size:14px">Здесь можно исправить данные записи, в том числе прошедший приём.</p>
         <form th:action="${appointment.idAppointment != null} ? '/appointments/update' : '/appointments/save'" th:object="${appointment}" method="post" th:attr="data-patient-only=${isPatientOnly}">
             <input type="hidden" name="id" th:value="${appointment.idAppointment}" th:if="${appointment.idAppointment != null}">
+            <input type="hidden" name="returnUrl" th:if="${appointmentReturnUrl != null}" th:value="${appointmentReturnUrl}">
             <input type="hidden" th:field="*{type}" id="appointmentType">
             <div class="type-switch" role="tablist" aria-label="Тип записи">
                 <button type="button" data-type="DOCTOR_VISIT" role="tab">Приём врача</button>
@@ -178,7 +182,7 @@
             </div>
             <div class="btn-group">
                 <button type="submit" class="btn btn-save">Сохранить</button>
-                <a th:href="@{/appointments}" class="btn btn-cancel">Отмена</a>
+                <a th:href="${appointmentReturnUrl != null ? appointmentReturnUrl : '/appointments'}" class="btn btn-cancel">Отмена</a>
             </div>
         </form>
     </div>

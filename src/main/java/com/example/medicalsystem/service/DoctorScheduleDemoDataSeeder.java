@@ -7,6 +7,7 @@ import com.example.medicalsystem.model.User;
 import com.example.medicalsystem.repository.DoctorScheduleBreakRepository;
 import com.example.medicalsystem.repository.DoctorWorkingHoursRepository;
 import com.example.medicalsystem.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -24,21 +25,32 @@ public class DoctorScheduleDemoDataSeeder implements CommandLineRunner {
     private final DoctorWorkingHoursRepository workingHours;
     private final DoctorScheduleBreakRepository breaks;
     private final boolean enabled;
+    private final boolean reset;
 
+    @Autowired
     public DoctorScheduleDemoDataSeeder(UserRepository users,
                                         DoctorWorkingHoursRepository workingHours,
                                         DoctorScheduleBreakRepository breaks,
-                                        @Value("${app.demo-data.enabled:false}") boolean enabled) {
+                                        @Value("${app.demo-data.enabled:false}") boolean enabled,
+                                        @Value("${app.demo-data.reset:false}") boolean reset) {
         this.users = users;
         this.workingHours = workingHours;
         this.breaks = breaks;
         this.enabled = enabled;
+        this.reset = reset;
+    }
+
+    public DoctorScheduleDemoDataSeeder(UserRepository users,
+                                        DoctorWorkingHoursRepository workingHours,
+                                        DoctorScheduleBreakRepository breaks,
+                                        boolean enabled) {
+        this(users, workingHours, breaks, enabled, false);
     }
 
     @Override
     @Transactional
     public void run(String... args) {
-        if (!enabled) return;
+        if (!enabled || reset) return;
 
         List<User> doctors = users.findAll().stream()
                 .filter(user -> user.getRoles() != null && user.getRoles().contains(RoleEnum.DOCTOR))

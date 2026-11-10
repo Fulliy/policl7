@@ -126,7 +126,7 @@ public class DemoDataResetOrchestrator implements CommandLineRunner {
         List<ClinicBranch> branchList = seedBranches();
         seedGoals(specialtyList);
 
-        User admin = createUser("admin", "admin@clinic.local", "Иванова", "Марина", "Олеговна",
+        createUser("admin", "admin@clinic.local", "Иванова", "Марина", "Олеговна",
                 RoleEnum.ADMIN, null, null, null, false);
         User primaryDoctor = createUser("doctor", "doctor@clinic.local", "Петров", "Алексей", "Сергеевич",
                 RoleEnum.DOCTOR, departmentList.get(0), specialtyList.get(0), branchList, true);
@@ -243,7 +243,7 @@ public class DemoDataResetOrchestrator implements CommandLineRunner {
     private void seedBusinessRoles(List<Specialty> specialtyList) {
         for (Specialty specialty : specialtyList) {
             Role role = new Role();
-            role.setRoleName("Врач — " + specialty.getSpecialtyName());
+            role.setRoleName("Врач - " + specialty.getSpecialtyName());
             role.setDescription("Профиль врача специальности «" + specialty.getSpecialtyName() + "».");
             role.setSpecialty(specialty);
             roles.save(role);
@@ -333,7 +333,7 @@ public class DemoDataResetOrchestrator implements CommandLineRunner {
         user.setPhone("+7999" + String.format("%07d", Math.abs(username.hashCode()) % 10_000_000));
         user.setBirthDate(LocalDate.of(1980 + Math.abs(username.hashCode()) % 20, 1, 1));
         user.setAddress("г. Москва");
-        user.setPolicyNumber("POL-" + username.toUpperCase());
+        user.setPolicyNumber("POL-" + username.toUpperCase().replace('_', '-'));
         user.setRoles(EnumSet.of(role));
         user.setIdRole(role == RoleEnum.ADMIN ? 1 : role == RoleEnum.DOCTOR ? 2 : 3);
         user.setDepartment(department);
