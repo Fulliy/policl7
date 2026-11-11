@@ -5,7 +5,6 @@ import com.example.medicalsystem.records.service.MedicalRecordService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -51,7 +50,7 @@ public class PrescriptionApiController {
     public void delete(@PathVariable Integer id, Authentication auth) { service.deletePrescription(id, auth); }
 
     public record PrescriptionRequest(String medicationName, String dosage, String frequency, Integer durationDays,
-                                      @NotNull Integer medicalRecordId, @NotNull Integer serviceId) {
+                                      Integer medicalRecordId, Integer serviceId) {
         MedicalRecordService.PrescriptionRequest toRequest() {
             return new MedicalRecordService.PrescriptionRequest(medicationName, dosage, frequency, durationDays,
                     medicalRecordId, serviceId);

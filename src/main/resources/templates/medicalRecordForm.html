@@ -19,6 +19,12 @@
         .btn { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; cursor: pointer; text-align: center; text-decoration: none; border: none; }
         .btn-save { background: #3b82f6; color: white; }
         .btn-cancel { background: #9ca3af; color: white; }
+        .clinical-section { margin-top:22px; padding-top:20px; border-top:1px solid #dcebe7; }
+        .clinical-section h3 { margin:0 0 7px; color:#163640; font-size:18px; }
+        .clinical-note { margin-bottom:14px; color:#60777b; font-size:13px; line-height:1.5; }
+        .rx-row { display:grid; grid-template-columns:1.1fr .8fr .8fr 110px 1fr; gap:9px; align-items:start; margin:12px 0; }
+        .rx-row input,.rx-row select { min-width:0; }
+        @media(max-width:760px){.rx-row{grid-template-columns:1fr 1fr}.rx-row select:last-child{grid-column:1/-1}}
 </style>
     <link rel="stylesheet" href="/app.css">
 </head>
@@ -30,9 +36,22 @@
         <p th:if="${isDoctor}" style="margin:-12px 0 22px;color:#60777b;font-size:14px">Заполните диагноз, лечение и рекомендации по этому приёму.</p>
         <form th:action="${medicalRecord.idRecord} != null ? '/medicalRecords/update' : '/medicalRecords/save'" th:object="${medicalRecord}" method="post">
             <input type="hidden" name="id" th:value="${medicalRecord.idRecord}" th:if="${medicalRecord.idRecord != null}">
-            <div class="form-group"><label>Диагноз</label><textarea th:field="*{diagnosis}"></textarea><div class="error" th:if="${#fields.hasErrors('diagnosis')}" th:errors="*{diagnosis}"></div></div>
-            <div class="form-group"><label>Лечение</label><textarea th:field="*{treatment}"></textarea><div class="error" th:if="${#fields.hasErrors('treatment')}" th:errors="*{treatment}"></div></div>
-            <div class="form-group"><label>Рекомендации</label><textarea th:field="*{recommendations}"></textarea><div class="error" th:if="${#fields.hasErrors('recommendations')}" th:errors="*{recommendations}"></div></div>
+            <div class="form-group" th:if="${isDoctor}"><label for="recordTemplate">Шаблон заполнения</label><select id="recordTemplate"><option value="">Выберите шаблон</option><option value="exam">Первичный осмотр</option><option value="followup">Повторный приём</option></select><p class="clinical-note">Шаблон добавит структуру в пустые поля; заполненные данные не перезаписываются.</p></div>
+            <div class="form-group"><label for="diagnosis">Диагноз</label><textarea id="diagnosis" th:field="*{diagnosis}"></textarea><div class="error" th:if="${#fields.hasErrors('diagnosis')}" th:errors="*{diagnosis}"></div></div>
+            <div class="form-group"><label for="treatment">Лечение и план</label><textarea id="treatment" th:field="*{treatment}"></textarea><div class="error" th:if="${#fields.hasErrors('treatment')}" th:errors="*{treatment}"></div></div>
+            <div class="form-group"><label for="recommendations">Рекомендации пациенту и заметка к следующему визиту</label><textarea id="recommendations" th:field="*{recommendations}" maxlength="500" placeholder="Рекомендации пациенту и вопросы для следующего визита"></textarea><div class="error" th:if="${#fields.hasErrors('recommendations')}" th:errors="*{recommendations}"></div></div>
+            <div class="clinical-section" th:if="${isDoctor}">
+                <h3>Назначение к этому приёму</h3>
+                <p class="clinical-note">Необязательный блок. Можно добавить назначение при создании итога.</p>
+                <div class="rx-row">
+                    <input type="text" name="medicationName" th:value="${submittedMedicationName != null ? submittedMedicationName : (prescriptions != null and !prescriptions.isEmpty() ? prescriptions[0].medicationName : '')}" placeholder="Лекарство" maxlength="100">
+                    <input type="text" name="dosage" th:value="${submittedDosage != null ? submittedDosage : (prescriptions != null and !prescriptions.isEmpty() ? prescriptions[0].dosage : '')}" placeholder="Дозировка" maxlength="50">
+                    <input type="text" name="frequency" th:value="${submittedFrequency != null ? submittedFrequency : (prescriptions != null and !prescriptions.isEmpty() ? prescriptions[0].frequency : '')}" placeholder="Частота" maxlength="50">
+                    <input type="number" name="durationDays" th:value="${submittedDurationDays != null ? submittedDurationDays : (prescriptions != null and !prescriptions.isEmpty() ? prescriptions[0].durationDays : '')}" placeholder="Дней" min="1" max="365">
+                    <select name="serviceId"><option value="">Не выбирать услугу</option><option th:each="s : ${services}" th:value="${s.idService}" th:selected="${submittedServiceId != null ? submittedServiceId == s.idService : (prescriptions != null and !prescriptions.isEmpty() and prescriptions[0].service != null and prescriptions[0].service.idService == s.idService)}" th:text="${s.serviceName}"></option></select>
+                </div>
+                <p class="error" th:if="${prescriptionError != null}" th:text="${prescriptionError}"></p>
+            </div>
             <div class="form-group" th:if="${!isDoctor}"><label>Дата создания</label><input type="datetime-local" th:field="*{createdDate}"><div class="error" th:if="${#fields.hasErrors('createdDate')}" th:errors="*{createdDate}"></div></div><p th:if="${isDoctor}" class="form-group" style="color:#61777b;font-size:13px">Дата медицинского итога будет сохранена автоматически.</p>
             <div class="form-group">
                 <label>Прием</label>
@@ -48,5 +67,23 @@
         </form>
     </div>
 </div>
+<script>
+(() => {
+  const select = document.getElementById('recordTemplate');
+  if (!select) return;
+  select.addEventListener('change', () => {
+    const templates = {
+      exam: { diagnosis: 'Предварительный диагноз: ', treatment: 'План обследования и лечения: ', recommendations: 'Рекомендации пациенту: ' },
+      followup: { diagnosis: 'Динамика диагноза: ', treatment: 'Результаты лечения: ', recommendations: 'Что обсудить на следующем визите: ' }
+    };
+    const current = templates[select.value];
+    if (!current) return;
+    Object.entries(current).forEach(([id, prefix]) => {
+      const field = document.getElementById(id);
+      if (field && !field.value.trim()) field.value = prefix;
+    });
+  });
+})();
+</script>
 </body>
 </html>

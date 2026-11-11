@@ -97,6 +97,10 @@ public class PrescriptionService {
         return repository.findByMedicalRecord_IdRecord(idRecord);
     }
 
+    public boolean existsByMedicalRecord(Integer idRecord) {
+        return repository.existsByMedicalRecord_IdRecord(idRecord);
+    }
+
     public List<Prescription> findByService(Integer idService) {
         return repository.findByService_IdService(idService);
     }

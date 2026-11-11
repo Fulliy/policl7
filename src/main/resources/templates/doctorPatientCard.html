@@ -72,8 +72,14 @@
     <div class="card-layout">
         <section class="card-section">
             <h2>История приёмов</h2><p class="card-section-intro">Все прошлые визиты пациента и их медицинские итоги.</p>
-            <div class="visit-timeline">
-                <article th:each="visit : ${visits}" class="visit-item">
+            <form method="get" class="mb-4 flex flex-wrap gap-2">
+                <input type="hidden" name="appointmentId" th:if="${selectedVisit != null}" th:value="${selectedVisit.idAppointment}">
+                <label for="historySearch" class="sr-only">Поиск по истории пациента</label>
+                <input id="historySearch" name="q" type="search" th:value="${historyQuery}" placeholder="Найти диагноз, лечение или дату" style="flex:1;min-width:220px;min-height:48px;padding:11px 14px;border:2px solid #a9d8d0;border-radius:11px;font-size:16px">
+                <button type="submit" class="record-action">Найти</button>
+            </form>
+            <div class="visit-timeline" id="visitTimeline">
+                <article th:each="visit : ${visits}" class="visit-item" data-history-item>
                     <span class="visit-dot" aria-hidden="true"></span>
                     <div class="visit-body">
                         <div class="visit-top"><span class="visit-date" th:text="${visit.appointmentDate != null ? #temporals.format(visit.appointmentDate, 'd MMMM yyyy, HH:mm') : 'Дата не указана'}">10 ноября 2026, 10:00</span><span class="visit-status" th:text="${visit.statusLabel}">Завершена</span></div>
@@ -90,7 +96,8 @@
                     </div>
                 </article>
             </div>
-            <p th:if="${visits.isEmpty()}" class="empty-records">Завершённых приёмов пока нет.</p>
+            <p id="historyEmpty" th:if="${visits.isEmpty() and !historyFiltered}" class="empty-records">Завершённых приёмов пока нет.</p>
+            <p id="historyNoMatch" class="empty-records" th:if="${visits.isEmpty() and historyFiltered}">По вашему запросу ничего не найдено.</p>
         </section>
 
         <aside class="side-stack">

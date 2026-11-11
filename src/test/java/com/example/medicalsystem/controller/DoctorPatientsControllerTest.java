@@ -24,7 +24,7 @@ class DoctorPatientsControllerTest {
         User doctor = new User(); doctor.setIdUser(5);
         User patient = new User(); patient.setIdUser(8);
         when(users.findByUsername("doctor")).thenReturn(doctor);
-        Appointment visit = new Appointment(); visit.setUser(patient); visit.setStatus(AppointmentStatus.completed.name());
+        Appointment visit = new Appointment(); visit.setIdAppointment(17); visit.setUser(patient); visit.setStatus(AppointmentStatus.completed.name());
         visit.setAppointmentDate(java.time.LocalDateTime.now().minusDays(1));
         when(appointments.findByDoctor(5)).thenReturn(List.of(visit));
         DoctorPatientsController controller = new DoctorPatientsController(appointments, records, users);
@@ -33,11 +33,13 @@ class DoctorPatientsControllerTest {
         var model = new ConcurrentModel();
         assertEquals("doctorPatients", controller.list(principal, model));
         assertEquals(1, ((java.util.Collection<?>) model.getAttribute("patients")).size());
-        assertThrows(ResponseStatusException.class, () -> controller.patientCard(99, principal, new ConcurrentModel()));
+        assertThrows(ResponseStatusException.class,
+                () -> controller.patientCard(99, null, null, principal, new ConcurrentModel()));
         var cardModel = new ConcurrentModel();
         when(appointments.findByUser(8)).thenReturn(List.of(visit));
-        assertEquals("doctorPatientCard", controller.patientCard(8, principal, cardModel));
+        when(records.findByAppointments(List.of(17))).thenReturn(List.of());
+        assertEquals("doctorPatientCard", controller.patientCard(8, null, null, principal, cardModel));
         assertEquals(List.of(), cardModel.getAttribute("medicalRecords"));
-        verify(records).findAllForPatient(8);
+        verify(records).findByAppointments(List.of(17));
     }
 }

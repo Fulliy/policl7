@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequestMapping("/admin/patient-affiliations")
@@ -48,7 +49,8 @@ public class AdminAffiliationsController {
                        @RequestParam(required = false) String medicalCenterName,
                        @RequestParam(required = false) String doctorName,
                        @RequestParam @jakarta.validation.constraints.NotNull java.time.LocalDate attachedAt,
-                       @RequestParam @jakarta.validation.constraints.NotNull PatientAffiliation.AffiliationStatus status) {
+                       @RequestParam @jakarta.validation.constraints.NotNull PatientAffiliation.AffiliationStatus status,
+                       RedirectAttributes redirectAttributes) {
         try {
         var patient = users.findById(patientId).orElseThrow(() ->
                 new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Пациент не найден."));
@@ -64,6 +66,11 @@ public class AdminAffiliationsController {
         if (branch == null || center.isBlank())
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.BAD_REQUEST, "Выберите медцентр из списка.");
+        if (status == PatientAffiliation.AffiliationStatus.ACTIVE
+                && affiliations.existsByPatient_IdUserAndStatus(patientId, PatientAffiliation.AffiliationStatus.ACTIVE)) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
+                    "У пациента уже есть активное прикрепление. Сначала завершите его, затем создайте новое.");
+        }
         if (affiliations.existsByPatient_IdUserAndMedicalCenterNameAndDoctorNameAndAttachedAt(
                 patientId, center, doctor, attachedAt)) {
             throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
@@ -78,8 +85,9 @@ public class AdminAffiliationsController {
         affiliations.save(affiliation);
         return "redirect:/admin/patient-affiliations";
         } catch (org.springframework.web.server.ResponseStatusException exception) {
-            return org.springframework.http.ResponseEntity.status(exception.getStatusCode())
-                    .body(java.util.Map.of("message", exception.getReason() == null ? "Не удалось сохранить прикрепление." : exception.getReason()));
+            redirectAttributes.addFlashAttribute("affiliationError",
+                    exception.getReason() == null ? "Не удалось сохранить прикрепление." : exception.getReason());
+            return "redirect:/admin/patient-affiliations";
         }
     }
 

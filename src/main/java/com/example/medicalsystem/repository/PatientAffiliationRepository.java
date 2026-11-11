@@ -11,4 +11,6 @@ public interface PatientAffiliationRepository extends JpaRepository<PatientAffil
 
     boolean existsByPatient_IdUserAndMedicalCenterNameAndDoctorNameAndAttachedAt(
             Integer patientId, String medicalCenterName, String doctorName, LocalDate attachedAt);
+
+    boolean existsByPatient_IdUserAndStatus(Integer patientId, PatientAffiliation.AffiliationStatus status);
 }

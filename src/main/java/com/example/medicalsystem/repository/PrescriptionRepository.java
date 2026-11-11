@@ -16,6 +16,8 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, Inte
     // Поиск по медицинской записи
     List<Prescription> findByMedicalRecord_IdRecord(Integer idRecord);
 
+    boolean existsByMedicalRecord_IdRecord(Integer idRecord);
+
     // Поиск по услуге
     List<Prescription> findByService_IdService(Integer idService);
 

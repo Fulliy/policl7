@@ -30,6 +30,10 @@ public class MainController {
     private final AppointmentService appointmentService;
     private final UserService userService;
     private final MedicalRecordService medicalRecordService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.example.medicalsystem.repository.DoctorWorkingHoursRepository doctorWorkingHoursRepository;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.example.medicalsystem.repository.DoctorScheduleExceptionRepository doctorScheduleExceptionRepository;
 
     @org.springframework.beans.factory.annotation.Autowired
     public MainController(AppointmentService appointmentService, UserService userService,
@@ -129,6 +133,14 @@ public class MainController {
             model.addAttribute("weekAppointments", weekAppointments);
             model.addAttribute("appointmentsToday", weekAppointments.stream()
                     .filter(appointment -> appointment.getAppointmentDate().isBefore(startOfTomorrow)).count());
+            model.addAttribute("workingHours", doctorWorkingHoursRepository == null ? List.of()
+                    : java.util.stream.IntStream.rangeClosed(1, 7).boxed()
+                    .flatMap(day -> doctorWorkingHoursRepository.findByDoctor_IdUserAndDayOfWeek(doctor.getIdUser(), day).stream())
+                    .toList());
+            model.addAttribute("weekdays", List.of("Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"));
+            model.addAttribute("scheduleExceptions", doctorScheduleExceptionRepository == null ? List.of()
+                    : doctorScheduleExceptionRepository.findByDoctor_IdUserAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                    doctor.getIdUser(), todayDate.plusMonths(6), todayDate));
             return "doctor_dashboard";
         }
         boolean patientRole = principal.getAuthorities().stream().anyMatch(a -> "PATIENT".equals(a.getAuthority()));

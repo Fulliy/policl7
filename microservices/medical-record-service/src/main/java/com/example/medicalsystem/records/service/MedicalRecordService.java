@@ -101,7 +101,7 @@ public class MedicalRecordService {
     public Prescription createPrescription(PrescriptionRequest request, Authentication auth) {
         requireStaff(auth);
         assertRecordAccess(request.medicalRecordId(), auth);
-        requireService(request.serviceId());
+        if (request.serviceId() != null) requireService(request.serviceId());
         Prescription value = new Prescription();
         apply(value, request);
         return prescriptions.save(value);
@@ -112,7 +112,7 @@ public class MedicalRecordService {
         Prescription value = requirePrescription(id);
         assertRecordAccess(value.getMedicalRecordId(), auth);
         assertRecordAccess(request.medicalRecordId(), auth);
-        requireService(request.serviceId());
+        if (request.serviceId() != null) requireService(request.serviceId());
         apply(value, request);
         return prescriptions.save(value);
     }

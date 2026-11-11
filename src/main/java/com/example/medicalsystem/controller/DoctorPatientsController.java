@@ -64,6 +64,7 @@ public class DoctorPatientsController {
     @GetMapping("/{patientId}")
     public String patientCard(@PathVariable Integer patientId,
                               @RequestParam(required = false) Integer appointmentId,
+                              @RequestParam(required = false) String q,
                               @AuthenticationPrincipal UserDetails principal, Model model) {
         var doctor = users.findByUsername(principal.getUsername());
         var ownVisits = appointments.findByDoctor(doctor.getIdUser()).stream()
@@ -91,6 +92,8 @@ public class DoctorPatientsController {
         patientVisits.forEach(visit -> visit.setMedicalRecords(recordsByAppointment.getOrDefault(visit.getIdAppointment(), java.util.List.of())));
         visits.forEach(visit -> visit.setMedicalRecords(recordsByAppointment.getOrDefault(visit.getIdAppointment(), java.util.List.of())));
         ownVisits.forEach(visit -> visit.setMedicalRecords(recordsByAppointment.getOrDefault(visit.getIdAppointment(), java.util.List.of())));
+        String query = q == null ? "" : q.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!query.isBlank()) visits = visits.stream().filter(visit -> historyMatches(visit, query)).toList();
         Appointment selectedVisit = appointmentId == null ? null : ownVisits.stream()
                 .filter(visit -> appointmentId.equals(visit.getIdAppointment()))
                 .filter(visit -> AppointmentStatus.parse(visit.getStatus()) == AppointmentStatus.pending
@@ -102,9 +105,23 @@ public class DoctorPatientsController {
         model.addAttribute("currentDoctorId", doctor.getIdUser());
         model.addAttribute("visits", visits);
         model.addAttribute("allPatientVisits", patientVisits);
+        model.addAttribute("historyQuery", q == null ? "" : q.trim());
+        model.addAttribute("historyFiltered", q != null && !q.isBlank());
         model.addAttribute("selectedVisit", selectedVisit);
         model.addAttribute("medicalRecords", allRecords);
         return "doctorPatientCard";
+    }
+
+    private boolean historyMatches(Appointment visit, String query) {
+        String basic = (visit.getComplaint() == null ? "" : visit.getComplaint()) + " "
+                + (visit.getStatusLabel() == null ? "" : visit.getStatusLabel()) + " "
+                + (visit.getAppointmentDate() == null ? "" : visit.getAppointmentDate());
+        if (basic.toLowerCase(java.util.Locale.ROOT).contains(query)) return true;
+        return visit.getMedicalRecords() != null && visit.getMedicalRecords().stream().anyMatch(record ->
+                ((record.getDiagnosis() == null ? "" : record.getDiagnosis()) + " "
+                        + (record.getTreatment() == null ? "" : record.getTreatment()) + " "
+                        + (record.getRecommendations() == null ? "" : record.getRecommendations()))
+                        .toLowerCase(java.util.Locale.ROOT).contains(query));
     }
 
     private boolean belongsToDoctorPatient(Appointment appointment) {

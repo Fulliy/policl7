@@ -43,7 +43,6 @@ public class Prescription {
     @JoinColumn(name = "id_record")
     private MedicalRecord medicalRecord;
 
-    @NotNull(message = "Услуга обязательна")
     @ManyToOne
     @JoinColumn(name = "id_service")
     private MedicalServiceEntity service;

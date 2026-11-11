@@ -33,10 +33,14 @@
             <div class="form-group"><label>Длительность, дней</label><input type="number" th:field="*{durationDays}"><div class="error" th:if="${#fields.hasErrors('durationDays')}" th:errors="*{durationDays}"></div></div>
             <div class="form-group">
                 <label>Медицинская запись</label>
-                <select th:field="*{medicalRecord}">
+                <select th:if="${!isDoctor or prescription.medicalRecord == null}" th:field="*{medicalRecord}">
                     <option value="">Выберите запись</option>
                     <option th:each="r : ${medicalRecords}" th:value="${r.idRecord}" th:text="${r.idRecord} + ' - ' + ${r.diagnosis}"></option>
                 </select>
+                <p th:if="${isDoctor and prescription.medicalRecord != null}"
+                   th:text="${prescription.medicalRecord.idRecord + ' — ' + prescription.medicalRecord.diagnosis}"
+                   style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;background:#f7fbfa;color:#263746"></p>
+                <input th:if="${isDoctor and prescription.medicalRecord != null}" type="hidden" th:field="*{medicalRecord}">
                 <div class="error" th:if="${#fields.hasErrors('medicalRecord')}" th:errors="*{medicalRecord}"></div>
             </div>
             <div class="form-group">

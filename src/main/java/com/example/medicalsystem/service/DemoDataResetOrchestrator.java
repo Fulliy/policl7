@@ -184,6 +184,7 @@ public class DemoDataResetOrchestrator implements CommandLineRunner {
 
         seedSchedules(doctors);
         seedAppointmentsAndRecords(doctors, patients, departmentList, branchList, serviceList);
+        seedDoctorAlexeyTestVisits(primaryDoctor, patients, departmentList, branchList);
         seedAffiliations(patients, branchList);
 
         System.out.println("Demo database rebuilt: " + doctors.size() + " doctors and "
@@ -361,6 +362,18 @@ public class DemoDataResetOrchestrator implements CommandLineRunner {
                 lunch.setEndTime(LocalTime.of(14, 0));
                 scheduleBreaks.save(lunch);
             }
+        }
+    }
+
+    private void seedDoctorAlexeyTestVisits(User doctor, List<User> patients,
+                                            List<Department> departments, List<ClinicBranch> branches) {
+        LocalDate today = LocalDate.now(CLINIC_ZONE);
+        for (int i = 0; i < 5 && i < patients.size(); i++) {
+            User patient = patients.get(i);
+            Appointment visit = newAppointment(patient, doctor, departments, branches,
+                    today.minusDays(2 + i), LocalTime.of(10 + i, 0), "confirmed");
+            visit.setComplaint("Тестовый прошедший приём без медицинского итога");
+            appointments.save(visit);
         }
     }
 

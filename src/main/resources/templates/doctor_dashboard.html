@@ -52,6 +52,20 @@
         </div>
     </section>
 
+    <section class="doctor-panel" aria-labelledby="calendar-title">
+        <div class="doctor-panel-heading"><h2 id="calendar-title">Мой график и отсутствие</h2><p>Рабочие часы на неделю и запланированные дни, когда приёма не будет.</p></div>
+        <div class="grid gap-4 p-5 md:grid-cols-2">
+            <div><h3 class="mb-2 font-bold text-ink">Рабочие часы</h3>
+                <div th:each="hour : ${workingHours}" class="flex justify-between border-b border-[#edf3f2] py-2 text-sm text-slate-600"><span th:text="${weekdays[hour.dayOfWeek - 1]}">Понедельник</span><strong th:text="${hour.startTime + '–' + hour.endTime}">09:00–17:00</strong></div>
+                <p th:if="${workingHours.isEmpty()}" class="doctor-empty">График пока не настроен. Обратитесь к администратору клиники.</p>
+            </div>
+            <div><h3 class="mb-2 font-bold text-ink">Отсутствие</h3>
+                <div th:each="exception : ${scheduleExceptions}" class="flex justify-between gap-3 border-b border-[#edf3f2] py-2 text-sm text-slate-600"><span th:text="${exception.type}">Отпуск</span><strong th:text="${exception.startDate + ' — ' + exception.endDate}">даты</strong></div>
+                <p th:if="${scheduleExceptions.isEmpty()}" class="doctor-empty">Ближайших периодов отсутствия нет.</p>
+            </div>
+        </div>
+    </section>
+
     <section class="doctor-panel" aria-labelledby="week-title">
         <div class="doctor-panel-heading"><h2 id="week-title">Ближайшая неделя</h2><p>Предстоящие визиты по времени</p></div>
         <div>

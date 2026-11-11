@@ -31,7 +31,7 @@
 <div class="container">
     <div class="header">
         <h2>Назначения</h2>
-        <a href="/prescriptions/new" class="btn btn-primary">Добавить</a>
+        <a th:if="${!isDoctor}" href="/prescriptions/new" class="btn btn-primary">Добавить</a>
     </div>
 
     <form th:action="@{/prescriptions}" method="get" class="search-form">
@@ -72,8 +72,8 @@
             <td th:text="${presc.medicalRecord != null ? presc.medicalRecord.diagnosis : '-'}"></td>
             <td th:text="${presc.service != null ? presc.service.serviceName : '-'}"></td>
             <td>
-                <a th:href="@{/prescriptions/{id}/edit(id=${presc.idPrescription})}" class="btn btn-edit">Изменить</a>
-                <form th:action="@{/prescriptions/{id}/delete(id=${presc.idPrescription})}" method="post" style="display:inline;">
+                <a th:if="${!isDoctor}" th:href="@{/prescriptions/{id}/edit(id=${presc.idPrescription})}" class="btn btn-edit">Изменить</a>
+                <form th:if="${!isDoctor}" th:action="@{/prescriptions/{id}/delete(id=${presc.idPrescription})}" method="post" style="display:inline;">
                     <button type="submit" class="btn-delete" onclick="return confirm('Удалить назначение?')">Удалить</button>
                 </form>
             </td>
